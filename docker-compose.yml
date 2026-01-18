@@ -22,7 +22,7 @@ services:
     container_name: bazar_backend_api
     build:
       context: .
-      dockerfile: BazaR.Backend.Api/Dockerfile
+      dockerfile: src/BazaR.Backend.Api/Dockerfile
     depends_on:
       db:
         condition: service_healthy
