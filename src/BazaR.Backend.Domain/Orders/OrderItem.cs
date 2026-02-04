@@ -1,5 +1,5 @@
 ﻿using System;
-using BazaR.Backend.Domain.Catalog;
+using BazaR.Backend.Domain.Catalog.Products;
 using BazaR.Backend.Domain.Common;
 
 namespace BazaR.Backend.Domain.Orders;

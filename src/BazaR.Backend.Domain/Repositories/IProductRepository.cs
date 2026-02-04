@@ -1,11 +1,24 @@
 ﻿using BazaR.Backend.Domain.Catalog;
+using BazaR.Backend.Domain.Catalog.Products;
 
-namespace BazaR.Backend.Domain.Repositories;
+namespace BazaR.Backend.Application.Abstractions.Repositories;
 
 public interface IProductRepository
 {
-    Task<Product?> GetById(ProductId id);
+    Task<Product?> GetByIdAsync(ProductId id, CancellationToken ct);
 
-    Task Add(Product product);
-    Task Update(Product product);
+    void Add(Product product);
+    void Remove(Product product);
+
+    /// <summary>
+    /// Проверка уникальности Slug (обычно + уникальный индекс в БД).
+    /// excludeProductId нужен для обновления продукта.
+    /// </summary>
+    Task<bool> SlugExistsAsync(ProductSlug slug, ProductId? excludeProductId, CancellationToken ct);
+
+    /// <summary>
+    /// Проверка уникальности VendorCode (обычно + уникальный индекс в БД).
+    /// excludeProductId нужен для обновления продукта.
+    /// </summary>
+    Task<bool> VendorCodeExistsAsync(VendorCode vendorCode, ProductId? excludeProductId, CancellationToken ct);
 }

@@ -1,5 +1,4 @@
-﻿using BazaR.Backend.Domain.Catalog;
-using BazaR.Backend.Domain.Common;
+﻿using BazaR.Backend.Domain.Common;
 using BazaR.Backend.Domain.Orders.Events;
 using BazaR.Backend.Domain.Users;
 
@@ -25,15 +24,15 @@ public sealed class Order : AggregateRoot<OrderId>
         Status = OrderStatus.Pending;
     }
 
-    private Order() { } // for ORM
+    private Order() { } 
 
-    // Factory Method (Named constructor) + invariants + domain event
+   
     public static Result<Order> Create(UserId userId, Address address, IReadOnlyCollection<OrderLine> lines)
     {
         if (lines is null || lines.Count == 0)
             return Result<Order>.Failure(OrderErrors.EmptyOrder);
 
-        // validate quantities & currency consistency
+       
         foreach (var line in lines)
         {
             if (line.Quantity <= 0)
@@ -61,15 +60,15 @@ public sealed class Order : AggregateRoot<OrderId>
         get
         {
             if (_items.Count == 0)
-                return Money.Create(0.01m, "UAH").Value!; // никогда не должно случаться после инвариантов
-                                                          // (можешь убрать и сделать отдельный safe-guard)
+                return Money.Create(0.01m, "UAH").Value!; 
+                                                         
             var currency = _items[0].PriceSnapshot.Currency;
             var sum = _items.Sum(i => i.PriceSnapshot.Amount * i.Quantity);
             return Money.Create(sum, currency).Value!;
         }
     }
 
-    // State machine: Pending -> Paid
+    
     public Result Pay()
     {
         if (Status == OrderStatus.Cancelled)
@@ -83,7 +82,7 @@ public sealed class Order : AggregateRoot<OrderId>
         return Result.Success();
     }
 
-    // State machine: Pending -> Cancelled
+    
     public Result Cancel()
     {
         if (Status == OrderStatus.Paid)
@@ -97,7 +96,7 @@ public sealed class Order : AggregateRoot<OrderId>
         return Result.Success();
     }
 
-    // Optional behavior: user can update address only while Pending
+    
     public Result ChangeDeliveryAddress(Address newAddress)
     {
         if (Status != OrderStatus.Pending)

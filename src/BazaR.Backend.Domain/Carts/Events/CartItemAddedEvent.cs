@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using BazaR.Backend.Domain.Common;
-using BazaR.Backend.Domain.Catalog;
+using BazaR.Backend.Domain.Catalog.Products;
 
 namespace BazaR.Backend.Domain.Carts.Events;
 

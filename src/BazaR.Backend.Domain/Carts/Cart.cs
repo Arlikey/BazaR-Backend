@@ -1,5 +1,5 @@
 ﻿using BazaR.Backend.Domain.Carts.Events;
-using BazaR.Backend.Domain.Catalog;
+using BazaR.Backend.Domain.Catalog.Products;
 using BazaR.Backend.Domain.Common;
 using BazaR.Backend.Domain.Users;
 
