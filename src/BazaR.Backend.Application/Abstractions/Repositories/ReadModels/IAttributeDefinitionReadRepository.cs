@@ -6,14 +6,12 @@ public interface IAttributeDefinitionReadRepository
 {
     Task<AttributeDefinitionDetailsDto?> GetByIdAsync(AttributeId id, CancellationToken ct);
 
-    /// <summary>
-    /// Пока без фильтров просто все элементы для таблицы
-    /// </summary>
+    
+    // Пока без фильтров просто все элементы для таблицы
     Task<IReadOnlyList<AttributeDefinitionListItemDto>> ListAsync(CancellationToken ct);
 
-    /// <summary>
-    /// Для autocomplete (по name/code)
-    /// </summary>
+   
+    // Для autocomplete (по name/code)
     Task<IReadOnlyList<AttributeDefinitionListItemDto>> SearchAsync(
         string term,
         int limit,

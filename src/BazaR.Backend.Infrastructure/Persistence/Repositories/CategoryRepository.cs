@@ -15,14 +15,12 @@ public sealed class CategoryRepository : ICategoryRepository
     }
 
     
-    // Лёгкая загрузка категории (tracked), без атрибутов.
-    // Подходит для Rename/Move и других операций, не трогающих Attributes.
+  
     public Task<Category?> GetByIdAsync(CategoryId id, CancellationToken ct)
         => _db.Categories
             .SingleOrDefaultAsync(c => c.Id == id, ct);
 
-    // Полная загрузка агрегата (tracked) с Category.Attributes.
-    // Используй для AddAttribute/RemoveAttribute/UpdateAttributeRules/SetSection.
+    
     public Task<Category?> GetByIdWithAttributesAsync(CategoryId id, CancellationToken ct)
         => _db.Categories
             .Include(c => c.Attributes)
@@ -31,9 +29,7 @@ public sealed class CategoryRepository : ICategoryRepository
     public Task<bool> ExistsAsync(CategoryId id, CancellationToken ct)
         => _db.Categories.AnyAsync(c => c.Id == id, ct);
 
-    // =====================================================
-    // Read-side: hierarchy
-    // =====================================================
+   
 
     public async Task<IReadOnlyList<Category>> GetParentCategoriesAsync(CancellationToken ct)
         => await _db.Categories

@@ -1,16 +1,39 @@
-﻿namespace BazaR.Backend.Application.Abstractions.ReadModels;
+﻿using BazaR.Backend.Application.Catalog.Offers.DTOs;
+using BazaR.Backend.Application.Catalog.Products.DTOs;
+
+namespace BazaR.Backend.Application.Abstractions.ReadModels;
+
+
 
 // 1/2) лёгкий список (таблица)
 public sealed record ProductListItemDto(
     Guid Id,
     string Name,
+    string? Description,
     Guid CategoryId,
     Guid? BrandId,
     string? VendorCode,
     string? Slug,
-    string Status);
+    string Status,
+    string? MainImageUrl);
 
-// 3) детали товара (без template/options)
+public sealed record ProductCardDto(
+    Guid Id,
+    string Name,
+    string? Slug,
+    string? Description,
+    string? MainImageUrl
+);
+
+public sealed record ProductCardWithOfferDto(
+    Guid Id,
+    string Name,
+    string? Slug,
+    string? Description,
+    string? MainImageUrl,
+    OfferCardDto? Offer
+);
+
 public sealed record ProductDetailsDto(
     Guid Id,
     string Name,
@@ -19,9 +42,12 @@ public sealed record ProductDetailsDto(
     Guid? BrandId,
     string? VendorCode,
     string? Slug,
-    string Status);
+    string Status,
+    string? MainImageUrl,
+    IReadOnlyList<ProductImageDto> Images
+);
 
-// 4) характеристики “как надо”
+
 public sealed record ProductAttributesViewDto(
     Guid ProductId,
     Guid CategoryId,

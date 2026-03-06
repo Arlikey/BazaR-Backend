@@ -1,4 +1,5 @@
-﻿using BazaR.Backend.Domain.Catalog.Products;
+﻿using BazaR.Backend.Application.Abstractions.Files;
+using BazaR.Backend.Domain.Catalog.Products;
 using BazaR.Backend.Domain.Categories;
 using BazaR.Backend.Domain.Common;
 using MediatR;
@@ -12,9 +13,13 @@ public sealed record CreateProductCommand(
     string? Description = null,
     Guid? BrandId = null,
     string? VendorCode = null,
-    string? Slug = null
-) : IRequest<Result<ProductId>>;
+    string? Slug = null,
+    string? Barcode = null,
 
+   
+    IReadOnlyList<UploadFile>? Images = null,
+    bool MakeFirstImageMain = true
+) : IRequest<Result<ProductId>>;
 
 public sealed record ProductAttributeInput(
     Guid AttributeId,
@@ -24,5 +29,3 @@ public sealed record ProductAttributeInput(
     Guid? OptionId = null,
     IReadOnlyCollection<Guid>? OptionIds = null
 );
-
-

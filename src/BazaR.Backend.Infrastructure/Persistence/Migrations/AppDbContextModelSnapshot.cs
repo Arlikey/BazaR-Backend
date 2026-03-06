@@ -22,24 +22,6 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("BazaR.Backend.Domain.Carts.Cart", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId")
-                        .IsUnique();
-
-                    b.ToTable("carts", (string)null);
-                });
-
             modelBuilder.Entity("BazaR.Backend.Domain.Catalog.Attributes.AttributeDefinition", b =>
                 {
                     b.Property<Guid>("Id")
@@ -91,6 +73,11 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("Barcode")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("barcode");
+
                     b.Property<Guid?>("BrandId")
                         .HasColumnType("uuid")
                         .HasColumnName("brand_id");
@@ -99,16 +86,37 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("category_id");
 
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
                     b.Property<string>("Description")
                         .HasMaxLength(5000)
                         .HasColumnType("character varying(5000)")
                         .HasColumnName("description");
+
+                    b.Property<DateTimeOffset?>("HiddenAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("hidden_at");
+
+                    b.Property<Guid?>("HiddenBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("hidden_by");
+
+                    b.Property<string>("HiddenReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("hidden_reason");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
                         .HasColumnName("name");
+
+                    b.Property<Guid>("OwnerSellerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("owner_seller_id");
 
                     b.Property<string>("Slug")
                         .HasMaxLength(200)
@@ -119,6 +127,10 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("status");
 
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
                     b.Property<string>("VendorCode")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
@@ -126,27 +138,35 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Barcode")
+                        .HasDatabaseName("ix_products_barcode");
+
                     b.HasIndex("CategoryId")
                         .HasDatabaseName("ix_products_category_id");
 
-                    b.HasIndex("Slug")
-                        .IsUnique()
-                        .HasDatabaseName("ux_products_slug")
-                        .HasFilter("slug IS NOT NULL");
+                    b.HasIndex("OwnerSellerId")
+                        .HasDatabaseName("ix_products_owner_seller_id");
 
                     b.HasIndex("Status")
                         .HasDatabaseName("ix_products_status");
 
-                    b.HasIndex("VendorCode")
+                    b.HasIndex("OwnerSellerId", "Slug")
                         .IsUnique()
-                        .HasDatabaseName("ux_products_vendor_code")
+                        .HasDatabaseName("ux_products_owner_slug")
+                        .HasFilter("slug IS NOT NULL");
+
+                    b.HasIndex("OwnerSellerId", "VendorCode")
+                        .IsUnique()
+                        .HasDatabaseName("ux_products_owner_vendor_code")
                         .HasFilter("vendor_code IS NOT NULL");
 
                     b.ToTable("products", null, t =>
                         {
+                            t.HasCheckConstraint("ck_products_hidden_fields", "(status <> 3) OR (hidden_at IS NOT NULL AND hidden_by IS NOT NULL)");
+
                             t.HasCheckConstraint("ck_products_name_not_empty", "char_length(name) > 0");
 
-                            t.HasCheckConstraint("ck_products_status_valid", "status IN (0,1,2)");
+                            t.HasCheckConstraint("ck_products_status_valid", "status IN (0,1,2,3)");
                         });
                 });
 
@@ -196,6 +216,71 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
                     b.ToTable("product_attribute_values", (string)null);
                 });
 
+            modelBuilder.Entity("BazaR.Backend.Domain.Catalog.Products.ProductImage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("content_type");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<bool>("IsMain")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_main");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("product_id");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint")
+                        .HasColumnName("size_bytes");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.Property<string>("StorageKey")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("storage_key");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)")
+                        .HasColumnName("url");
+
+                    b.Property<Guid?>("product_id")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId")
+                        .HasDatabaseName("ix_product_images_product_id");
+
+                    b.HasIndex("product_id");
+
+                    b.HasIndex("ProductId", "IsMain")
+                        .HasDatabaseName("ix_product_images_product_main")
+                        .HasFilter("is_main = true");
+
+                    b.ToTable("product_images", null, t =>
+                        {
+                            t.Property("product_id")
+                                .HasColumnName("product_id1");
+                        });
+                });
+
             modelBuilder.Entity("BazaR.Backend.Domain.Categories.Category", b =>
                 {
                     b.Property<Guid>("Id")
@@ -226,6 +311,10 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
 
                     b.ToTable("categories", null, t =>
                         {
+                            t.HasCheckConstraint("ck_categories_image_pair", "(image_url IS NULL AND image_storage_key IS NULL) OR (image_url IS NOT NULL AND image_storage_key IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_categories_image_size_positive_or_null", "image_size_bytes IS NULL OR image_size_bytes > 0");
+
                             t.HasCheckConstraint("ck_categories_name_not_empty", "char_length(name) > 0");
 
                             t.HasCheckConstraint("ck_categories_sort_order_non_negative", "sort_order >= 0");
@@ -287,6 +376,34 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("BazaR.Backend.Domain.Identity.AuthUser", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<bool>("IsBlocked")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_blocked");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("password_hash");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("auth_users", (string)null);
+                });
+
             modelBuilder.Entity("BazaR.Backend.Domain.Orders.Order", b =>
                 {
                     b.Property<Guid>("Id")
@@ -312,6 +429,20 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int?>("DeliveryDays")
+                        .HasColumnType("integer")
+                        .HasColumnName("delivery_days");
+
+                    b.Property<int>("MinOrderQuantity")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1)
+                        .HasColumnName("min_order_quantity");
+
                     b.Property<Guid>("ProductId")
                         .HasColumnType("uuid")
                         .HasColumnName("product_id");
@@ -319,6 +450,11 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("SellerId")
                         .HasColumnType("uuid")
                         .HasColumnName("seller_id");
+
+                    b.Property<string>("SellerSku")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("seller_sku");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer")
@@ -328,13 +464,23 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("stock");
 
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("ix_offers_created_at");
 
                     b.HasIndex("ProductId")
                         .HasDatabaseName("ix_offers_product_id");
 
                     b.HasIndex("SellerId")
                         .HasDatabaseName("ix_offers_seller_id");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_offers_status");
 
                     b.HasIndex("ProductId", "SellerId")
                         .IsUnique()
@@ -343,13 +489,151 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
                     b.HasIndex("ProductId", "Status")
                         .HasDatabaseName("ix_offers_product_id_status");
 
+                    b.HasIndex("SellerId", "SellerSku")
+                        .IsUnique()
+                        .HasDatabaseName("ux_offers_seller_id_seller_sku")
+                        .HasFilter("seller_sku IS NOT NULL");
+
                     b.ToTable("offers", null, t =>
                         {
+                            t.HasCheckConstraint("ck_offers_delivery_days_non_negative", "delivery_days IS NULL OR delivery_days >= 0");
+
+                            t.HasCheckConstraint("ck_offers_min_order_quantity_positive", "min_order_quantity >= 1");
+
+                            t.HasCheckConstraint("ck_offers_old_price_amount_non_negative", "old_price_amount IS NULL OR old_price_amount >= 0");
+
+                            t.HasCheckConstraint("ck_offers_old_price_currency_len", "old_price_currency IS NULL OR char_length(old_price_currency) = 3");
+
+                            t.HasCheckConstraint("ck_offers_old_price_nulls_together", "(old_price_amount IS NULL AND old_price_currency IS NULL) OR (old_price_amount IS NOT NULL AND old_price_currency IS NOT NULL)");
+
                             t.HasCheckConstraint("ck_offers_price_amount_non_negative", "price_amount IS NULL OR price_amount >= 0");
 
                             t.HasCheckConstraint("ck_offers_price_currency_len", "price_currency IS NULL OR char_length(price_currency) = 3");
 
+                            t.HasCheckConstraint("ck_offers_price_nulls_together", "(price_amount IS NULL AND price_currency IS NULL) OR (price_amount IS NOT NULL AND price_currency IS NOT NULL)");
+
                             t.HasCheckConstraint("ck_offers_stock_non_negative", "stock >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("BazaR.Backend.Domain.Sellers.Seller", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("CloseReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("close_reason");
+
+                    b.Property<DateTimeOffset?>("ClosedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("closed_at");
+
+                    b.Property<Guid?>("ClosedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("closed_by");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("description");
+
+                    b.Property<DateTimeOffset?>("LastDecisionAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_decision_at");
+
+                    b.Property<Guid?>("LastDecisionBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("last_decision_by");
+
+                    b.Property<string>("LastRejectionReason")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("last_rejection_reason");
+
+                    b.Property<string>("LegalName")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("legal_name");
+
+                    b.Property<string>("LogoUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("logo_url");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name");
+
+                    b.Property<Guid?>("OwnerUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("owner_user_id");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset?>("SubmittedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("submitted_at");
+
+                    b.Property<DateTimeOffset?>("SuspendedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("suspended_at");
+
+                    b.Property<Guid?>("SuspendedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("suspended_by");
+
+                    b.Property<string>("SuspensionReason")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("suspension_reason");
+
+                    b.Property<string>("TaxNumber")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("tax_number");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer")
+                        .HasColumnName("type");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerUserId")
+                        .HasDatabaseName("ix_sellers_owner_user_id");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_sellers_status");
+
+                    b.HasIndex("SubmittedAt")
+                        .HasDatabaseName("ix_sellers_submitted_at");
+
+                    b.HasIndex("TaxNumber")
+                        .IsUnique()
+                        .HasDatabaseName("ux_sellers_tax_number")
+                        .HasFilter("tax_number IS NOT NULL");
+
+                    b.ToTable("sellers", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_sellers_country_code_len", "char_length(country_code) = 2");
+
+                            t.HasCheckConstraint("ck_sellers_name_not_empty", "char_length(name) > 0");
+
+                            t.HasCheckConstraint("ck_sellers_slug_not_empty", "char_length(slug) > 0");
                         });
                 });
 
@@ -359,83 +643,165 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<string>("PasswordHash")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("password_hash");
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset?>("LastLoginAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_login_at");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer")
                         .HasColumnName("status");
 
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
                     b.Property<string>("_roles")
                         .IsRequired()
-                        .HasColumnType("text")
+                        .HasColumnType("varchar(255)")
                         .HasColumnName("roles");
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("ix_users_created_at");
+
+                    b.HasIndex("LastLoginAt")
+                        .HasDatabaseName("ix_users_last_login_at");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_users_status");
+
                     b.ToTable("users", (string)null);
                 });
 
-            modelBuilder.Entity("BazaR.Backend.Domain.Carts.Cart", b =>
+            modelBuilder.Entity("BazaR.Backend.Domain.Users.UserAvatar", b =>
                 {
-                    b.OwnsMany("BazaR.Backend.Domain.Carts.CartItem", "_items", b1 =>
-                        {
-                            b1.Property<Guid>("Id")
-                                .ValueGeneratedOnAdd()
-                                .HasColumnType("uuid")
-                                .HasColumnName("id");
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
-                            b1.Property<Guid>("ProductId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("product_id");
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("content_type");
 
-                            b1.Property<int>("Quantity")
-                                .HasColumnType("integer")
-                                .HasColumnName("quantity");
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
 
-                            b1.Property<Guid>("cart_id")
-                                .HasColumnType("uuid");
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint")
+                        .HasColumnName("size_bytes");
 
-                            b1.HasKey("Id");
+                    b.Property<string>("StorageKey")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("storage_key");
 
-                            b1.HasIndex("cart_id", "ProductId")
-                                .IsUnique();
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("url");
 
-                            b1.ToTable("cart_items", (string)null);
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
 
-                            b1.WithOwner()
-                                .HasForeignKey("cart_id");
+                    b.HasKey("Id");
 
-                            b1.OwnsOne("BazaR.Backend.Domain.Common.Money", "PriceSnapshot", b2 =>
-                                {
-                                    b2.Property<Guid>("CartItemId")
-                                        .HasColumnType("uuid");
+                    b.HasIndex("UserId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_user_avatars_user_id");
 
-                                    b2.Property<decimal>("Amount")
-                                        .HasColumnType("numeric")
-                                        .HasColumnName("price_amount");
+                    b.ToTable("user_avatars", (string)null);
+                });
 
-                                    b2.Property<string>("Currency")
-                                        .IsRequired()
-                                        .HasMaxLength(3)
-                                        .HasColumnType("character varying(3)")
-                                        .HasColumnName("price_currency");
+            modelBuilder.Entity("Cart", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
-                                    b2.HasKey("CartItemId");
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
 
-                                    b2.ToTable("cart_items");
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("currency");
 
-                                    b2.WithOwner()
-                                        .HasForeignKey("CartItemId");
-                                });
+                    b.Property<DateTimeOffset?>("LastActivityAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_activity_at");
 
-                            b1.Navigation("PriceSnapshot")
-                                .IsRequired();
-                        });
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
 
-                    b.Navigation("_items");
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LastActivityAt");
+
+                    b.HasIndex("UpdatedAt");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("carts", (string)null);
+                });
+
+            modelBuilder.Entity("CartItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("AddedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("added_at");
+
+                    b.Property<Guid>("CartId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cart_id");
+
+                    b.Property<Guid>("OfferId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("offer_id");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer")
+                        .HasColumnName("quantity");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CartId");
+
+                    b.HasIndex("CartId", "OfferId")
+                        .IsUnique();
+
+                    b.ToTable("cart_items", (string)null);
                 });
 
             modelBuilder.Entity("BazaR.Backend.Domain.Catalog.Attributes.AttributeDefinition", b =>
@@ -488,6 +854,63 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("BazaR.Backend.Domain.Catalog.Products.ProductImage", b =>
+                {
+                    b.HasOne("BazaR.Backend.Domain.Catalog.Products.Product", null)
+                        .WithMany("Images")
+                        .HasForeignKey("product_id")
+                        .OnDelete(DeleteBehavior.Cascade);
+                });
+
+            modelBuilder.Entity("BazaR.Backend.Domain.Categories.Category", b =>
+                {
+                    b.OwnsOne("BazaR.Backend.Domain.Categories.CategoryImage", "Image", b1 =>
+                        {
+                            b1.Property<Guid>("CategoryId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("ContentType")
+                                .IsRequired()
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)")
+                                .HasColumnName("image_content_type");
+
+                            b1.Property<DateTimeOffset>("CreatedAt")
+                                .HasColumnType("timestamp with time zone");
+
+                            b1.Property<Guid>("Id")
+                                .HasColumnType("uuid");
+
+                            b1.Property<long>("SizeBytes")
+                                .HasColumnType("bigint")
+                                .HasColumnName("image_size_bytes");
+
+                            b1.Property<string>("StorageKey")
+                                .IsRequired()
+                                .HasMaxLength(1024)
+                                .HasColumnType("character varying(1024)")
+                                .HasColumnName("image_storage_key");
+
+                            b1.Property<string>("Url")
+                                .IsRequired()
+                                .HasMaxLength(2000)
+                                .HasColumnType("character varying(2000)")
+                                .HasColumnName("image_url");
+
+                            b1.HasKey("CategoryId");
+
+                            b1.HasIndex("StorageKey")
+                                .HasDatabaseName("ix_categories_image_storage_key");
+
+                            b1.ToTable("categories");
+
+                            b1.WithOwner()
+                                .HasForeignKey("CategoryId");
+                        });
+
+                    b.Navigation("Image");
+                });
+
             modelBuilder.Entity("BazaR.Backend.Domain.Categories.CategoryAttribute", b =>
                 {
                     b.HasOne("BazaR.Backend.Domain.Categories.Category", null)
@@ -495,6 +918,78 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
                         .HasForeignKey("category_id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("BazaR.Backend.Domain.Identity.AuthUser", b =>
+                {
+                    b.OwnsOne("BazaR.Backend.Domain.Identity.IdentityEmail", "Email", b1 =>
+                        {
+                            b1.Property<Guid>("AuthUserId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("Value")
+                                .IsRequired()
+                                .HasMaxLength(320)
+                                .HasColumnType("character varying(320)")
+                                .HasColumnName("email");
+
+                            b1.HasKey("AuthUserId");
+
+                            b1.HasIndex("Value")
+                                .IsUnique()
+                                .HasDatabaseName("ux_auth_users_email");
+
+                            b1.ToTable("auth_users");
+
+                            b1.WithOwner()
+                                .HasForeignKey("AuthUserId");
+                        });
+
+                    b.OwnsMany("BazaR.Backend.Domain.Identity.RefreshToken", "RefreshTokens", b1 =>
+                        {
+                            b1.Property<Guid>("Id")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<DateTimeOffset>("CreatedAt")
+                                .HasColumnType("timestamp with time zone")
+                                .HasColumnName("created_at");
+
+                            b1.Property<DateTimeOffset>("ExpiresAt")
+                                .HasColumnType("timestamp with time zone")
+                                .HasColumnName("expires_at");
+
+                            b1.Property<DateTimeOffset?>("RevokedAt")
+                                .HasColumnType("timestamp with time zone")
+                                .HasColumnName("revoked_at");
+
+                            b1.Property<string>("TokenHash")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("token_hash");
+
+                            b1.Property<Guid>("auth_user_id")
+                                .HasColumnType("uuid")
+                                .HasColumnName("auth_user_id");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("TokenHash")
+                                .IsUnique()
+                                .HasDatabaseName("ux_auth_refresh_tokens_hash");
+
+                            b1.HasIndex("auth_user_id");
+
+                            b1.ToTable("auth_refresh_tokens", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("auth_user_id");
+                        });
+
+                    b.Navigation("Email")
+                        .IsRequired();
+
+                    b.Navigation("RefreshTokens");
                 });
 
             modelBuilder.Entity("BazaR.Backend.Domain.Orders.Order", b =>
@@ -597,6 +1092,29 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("BazaR.Backend.Domain.Sales.Offer", b =>
                 {
+                    b.OwnsOne("BazaR.Backend.Domain.Common.Money", "OldPrice", b1 =>
+                        {
+                            b1.Property<Guid>("OfferId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<decimal>("Amount")
+                                .HasColumnType("numeric(18,2)")
+                                .HasColumnName("old_price_amount");
+
+                            b1.Property<string>("Currency")
+                                .IsRequired()
+                                .HasMaxLength(3)
+                                .HasColumnType("character varying(3)")
+                                .HasColumnName("old_price_currency");
+
+                            b1.HasKey("OfferId");
+
+                            b1.ToTable("offers");
+
+                            b1.WithOwner()
+                                .HasForeignKey("OfferId");
+                        });
+
                     b.OwnsOne("BazaR.Backend.Domain.Common.Money", "Price", b1 =>
                         {
                             b1.Property<Guid>("OfferId")
@@ -620,12 +1138,165 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
                                 .HasForeignKey("OfferId");
                         });
 
+                    b.Navigation("OldPrice");
+
                     b.Navigation("Price");
+                });
+
+            modelBuilder.Entity("BazaR.Backend.Domain.Sellers.Seller", b =>
+                {
+                    b.OwnsOne("BazaR.Backend.Domain.Sellers.CountryCode", "CountryCode", b1 =>
+                        {
+                            b1.Property<Guid>("SellerId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("Value")
+                                .IsRequired()
+                                .HasMaxLength(2)
+                                .HasColumnType("character varying(2)")
+                                .HasColumnName("country_code");
+
+                            b1.HasKey("SellerId");
+
+                            b1.HasIndex("Value")
+                                .HasDatabaseName("ix_sellers_country_code");
+
+                            b1.ToTable("sellers");
+
+                            b1.WithOwner()
+                                .HasForeignKey("SellerId");
+                        });
+
+                    b.OwnsOne("BazaR.Backend.Domain.Sellers.EmailAddress", "SupportEmail", b1 =>
+                        {
+                            b1.Property<Guid>("SellerId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("Value")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("support_email");
+
+                            b1.HasKey("SellerId");
+
+                            b1.ToTable("sellers");
+
+                            b1.WithOwner()
+                                .HasForeignKey("SellerId");
+                        });
+
+                    b.OwnsOne("BazaR.Backend.Domain.Sellers.SellerSlug", "Slug", b1 =>
+                        {
+                            b1.Property<Guid>("SellerId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("Value")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("slug");
+
+                            b1.HasKey("SellerId");
+
+                            b1.HasIndex("Value")
+                                .IsUnique()
+                                .HasDatabaseName("ux_sellers_slug");
+
+                            b1.ToTable("sellers");
+
+                            b1.WithOwner()
+                                .HasForeignKey("SellerId");
+                        });
+
+                    b.OwnsOne("PhoneNumber", "SupportPhone", b1 =>
+                        {
+                            b1.Property<Guid>("SellerId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("Value")
+                                .IsRequired()
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)")
+                                .HasColumnName("support_phone");
+
+                            b1.HasKey("SellerId");
+
+                            b1.ToTable("sellers");
+
+                            b1.WithOwner()
+                                .HasForeignKey("SellerId");
+                        });
+
+                    b.Navigation("CountryCode")
+                        .IsRequired();
+
+                    b.Navigation("Slug")
+                        .IsRequired();
+
+                    b.Navigation("SupportEmail");
+
+                    b.Navigation("SupportPhone");
                 });
 
             modelBuilder.Entity("BazaR.Backend.Domain.Users.User", b =>
                 {
-                    b.OwnsOne("BazaR.Backend.Domain.Users.Email", "Email", b1 =>
+                    b.OwnsOne("BazaR.Backend.Domain.Users.FullName", "Name", b1 =>
+                        {
+                            b1.Property<Guid>("UserId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("FirstName")
+                                .IsRequired()
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)")
+                                .HasColumnName("first_name");
+
+                            b1.Property<string>("LastName")
+                                .IsRequired()
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)")
+                                .HasColumnName("last_name");
+
+                            b1.HasKey("UserId");
+
+                            b1.HasIndex("LastName")
+                                .HasDatabaseName("ix_users_last_name");
+
+                            b1.HasIndex("FirstName", "LastName")
+                                .HasDatabaseName("ix_users_full_name");
+
+                            b1.ToTable("users");
+
+                            b1.WithOwner()
+                                .HasForeignKey("UserId");
+                        });
+
+                    b.OwnsOne("BazaR.Backend.Domain.Users.PhoneNumber", "Phone", b1 =>
+                        {
+                            b1.Property<Guid>("UserId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("Value")
+                                .IsRequired()
+                                .HasMaxLength(0)
+                                .HasColumnType("text")
+                                .HasColumnName("phone");
+
+                            b1.HasKey("UserId");
+
+                            b1.HasIndex("Value")
+                                .IsUnique()
+                                .HasDatabaseName("ix_users_phone")
+                                .HasFilter("phone IS NOT NULL");
+
+                            b1.ToTable("users");
+
+                            b1.WithOwner()
+                                .HasForeignKey("UserId");
+                        });
+
+                    b.OwnsOne("Email", "Email", b1 =>
                         {
                             b1.Property<Guid>("UserId")
                                 .HasColumnType("uuid");
@@ -634,12 +1305,14 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
                                 .IsRequired()
                                 .HasMaxLength(320)
                                 .HasColumnType("character varying(320)")
-                                .HasColumnName("email");
+                                .HasColumnName("email")
+                                .HasComment("Normalized email (lowercase, trimmed)");
 
                             b1.HasKey("UserId");
 
                             b1.HasIndex("Value")
-                                .IsUnique();
+                                .IsUnique()
+                                .HasDatabaseName("ix_users_email");
 
                             b1.ToTable("users");
 
@@ -649,16 +1322,77 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
 
                     b.Navigation("Email")
                         .IsRequired();
+
+                    b.Navigation("Name")
+                        .IsRequired();
+
+                    b.Navigation("Phone");
+                });
+
+            modelBuilder.Entity("BazaR.Backend.Domain.Users.UserAvatar", b =>
+                {
+                    b.HasOne("BazaR.Backend.Domain.Users.User", null)
+                        .WithOne("_avatar")
+                        .HasForeignKey("BazaR.Backend.Domain.Users.UserAvatar", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("CartItem", b =>
+                {
+                    b.HasOne("Cart", null)
+                        .WithMany("_items")
+                        .HasForeignKey("CartId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.OwnsOne("BazaR.Backend.Domain.Carts.MoneySnapshot", "PriceSnapshot", b1 =>
+                        {
+                            b1.Property<Guid>("CartItemId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<decimal>("Amount")
+                                .HasColumnType("numeric(18,2)")
+                                .HasColumnName("price_amount");
+
+                            b1.Property<string>("Currency")
+                                .IsRequired()
+                                .HasMaxLength(3)
+                                .HasColumnType("character varying(3)")
+                                .HasColumnName("price_currency");
+
+                            b1.HasKey("CartItemId");
+
+                            b1.ToTable("cart_items");
+
+                            b1.WithOwner()
+                                .HasForeignKey("CartItemId");
+                        });
+
+                    b.Navigation("PriceSnapshot")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("BazaR.Backend.Domain.Catalog.Products.Product", b =>
                 {
                     b.Navigation("AttributeValues");
+
+                    b.Navigation("Images");
                 });
 
             modelBuilder.Entity("BazaR.Backend.Domain.Categories.Category", b =>
                 {
                     b.Navigation("Attributes");
+                });
+
+            modelBuilder.Entity("BazaR.Backend.Domain.Users.User", b =>
+                {
+                    b.Navigation("_avatar");
+                });
+
+            modelBuilder.Entity("Cart", b =>
+                {
+                    b.Navigation("_items");
                 });
 #pragma warning restore 612, 618
         }

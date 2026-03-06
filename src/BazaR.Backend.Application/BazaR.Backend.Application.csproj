@@ -7,8 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Catalog\Products\Services\" />
-    <Folder Include="Common\Interfaces\" />
+    <Folder Include="Sellers\Queries\GetById\" />
+    <Folder Include="Sellers\Queries\GetBySlug\" />
   </ItemGroup>
 
   <ItemGroup>

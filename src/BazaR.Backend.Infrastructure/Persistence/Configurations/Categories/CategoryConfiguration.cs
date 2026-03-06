@@ -44,30 +44,54 @@ public sealed class CategoryConfiguration : IEntityTypeConfiguration<Category>
             );
 
         // ======================
+        // Owned Image (optional)
+        // ======================
+        builder.OwnsOne(x => x.Image, img =>
+        {
+            img.Property(x => x.Url)
+                .HasColumnName("image_url")
+                .HasMaxLength(2000);
+
+            img.Property(x => x.StorageKey)
+                .HasColumnName("image_storage_key")
+                .HasMaxLength(1024);
+
+            img.Property(x => x.ContentType)
+                .HasColumnName("image_content_type")
+                .HasMaxLength(100);
+
+            img.Property(x => x.SizeBytes)
+                .HasColumnName("image_size_bytes");
+
+            // Индекс по StorageKey внутри owned-типа
+            img.HasIndex(x => x.StorageKey)
+                .HasDatabaseName("ix_categories_image_storage_key");
+        });
+
+        // Явно указываем, что Image опционально и использует backing field
+        builder.Navigation(x => x.Image)
+            .IsRequired(false)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        // ======================
         // Indexes
         // ======================
         builder.HasIndex(x => x.ParentCategoryId)
             .HasDatabaseName("ix_categories_parent_id");
 
-        
         builder.HasIndex(x => new { x.ParentCategoryId, x.SortOrder })
             .HasDatabaseName("ix_categories_parent_sort");
-
-        
 
         // ======================
         // CategoryAttributes (1:N)
         // ======================
-        // Привязка к приватному полю _attributes в Category
         builder.HasMany(x => x.Attributes)
-    .WithOne()
-    .HasForeignKey("category_id")
-    .OnDelete(DeleteBehavior.Cascade);
+            .WithOne()
+            .HasForeignKey("category_id")
+            .OnDelete(DeleteBehavior.Cascade);
 
-        // Указываем использовать приватное поле для коллекции
         builder.Navigation(x => x.Attributes)
             .UsePropertyAccessMode(PropertyAccessMode.Field);
-
 
         // ======================
         // Ignore domain events
@@ -82,6 +106,13 @@ public sealed class CategoryConfiguration : IEntityTypeConfiguration<Category>
             t.HasCheckConstraint("ck_categories_sort_order_non_negative", "sort_order >= 0");
             t.HasCheckConstraint("ck_categories_name_not_empty", "char_length(name) > 0");
 
-            });
+            // image_size_bytes либо null, либо > 0
+            t.HasCheckConstraint("ck_categories_image_size_positive_or_null",
+                "image_size_bytes IS NULL OR image_size_bytes > 0");
+
+            // если указан url — должен быть и storage_key (и наоборот)
+            t.HasCheckConstraint("ck_categories_image_pair",
+                "(image_url IS NULL AND image_storage_key IS NULL) OR (image_url IS NOT NULL AND image_storage_key IS NOT NULL)");
+        });
     }
 }

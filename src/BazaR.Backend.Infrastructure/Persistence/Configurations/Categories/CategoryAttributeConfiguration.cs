@@ -78,7 +78,7 @@ public sealed class CategoryAttributeConfiguration : IEntityTypeConfiguration<Ca
         builder.HasIndex(x => x.AttributeId)
             .HasDatabaseName("ix_category_attributes_attribute_id");
 
-        // Один и тот же атрибут нельзя назначить категории дважды
+        
         builder.HasIndex("category_id", nameof(CategoryAttribute.AttributeId))
     .IsUnique()
     .HasDatabaseName("ux_category_attributes_category_attribute");

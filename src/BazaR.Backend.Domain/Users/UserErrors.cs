@@ -30,4 +30,29 @@ public static class UserErrors
 
     public static readonly Error RoleNotAssigned =
         new("user.roles.notAssigned", "Role is not assigned.", ErrorType.NotFound);
+
+    public static Error IdentityIdRequired => new(
+       "User.IdentityIdRequired",
+       "Identity user ID is required.");
+
+    public static readonly Error FirstNameRequired =
+        new("User.FirstNameRequired", "First name is required.");
+
+    public static readonly Error LastNameRequired =
+        new("User.LastNameRequired", "Last name is required.");
+
+    public static readonly Error FirstNameTooLong =
+        new("User.FirstNameTooLong", "First name is too long.");
+
+    public static readonly Error LastNameTooLong =
+        new("User.LastNameTooLong", "Last name is too long.");
+
+    public static readonly Error PhoneInvalid =
+        new("User.PhoneInvalid", "Phone number is invalid.");
+
+    public static readonly Error PhoneTooLong =
+        new("User.PhoneTooLong", "Phone number is too long.");
+
+    public static readonly Error BlockedCannotBeModified =
+        new("User.BlockedCannotBeModified", "Blocked user cannot be modified.");
 }

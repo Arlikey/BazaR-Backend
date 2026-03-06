@@ -27,4 +27,12 @@ public static class OfferErrors
     public static readonly Error CannotActivateArchived =
     new("Offer.CannotActivateArchived", "Cannot activate archived offer.");
 
+    public static Error DeliveryDaysCannotBeNegative => new(
+       "Offer.DeliveryDaysCannotBeNegative",
+       "Delivery days cannot be negative.");
+
+    public static Error MinOrderQuantityMustBeAtLeastOne => new(
+        "Offer.MinOrderQuantityMustBeAtLeastOne",
+        "Minimum order quantity must be at least 1.");
+
 }

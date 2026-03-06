@@ -3,7 +3,7 @@ using BazaR.Backend.Domain.Catalog.Products;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace BazaR.Backend.Infrastructure.Persistence.Configurations;
+namespace BazaR.Backend.Infrastructure.Persistence.Configurations.Catalog;
 
 public sealed class ProductAttributeValueConfiguration : IEntityTypeConfiguration<ProductAttributeValue>
 {
@@ -52,7 +52,7 @@ public sealed class ProductAttributeValueConfiguration : IEntityTypeConfiguratio
         builder.HasIndex(x => x.AttributeId)
             .HasDatabaseName("ix_product_attribute_values_attribute_id");
 
-        // Уникальность: один атрибут = одно значение у продукта
+    
         builder.HasIndex("product_id", nameof(ProductAttributeValue.AttributeId))
             .IsUnique()
             .HasDatabaseName("ux_product_attribute_values_product_attribute");

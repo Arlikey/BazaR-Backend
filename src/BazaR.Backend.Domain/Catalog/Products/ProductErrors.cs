@@ -86,4 +86,56 @@ public static class ProductErrors
         new("Product.RequiredAttributesMissing", "Some required attributes are missing.");
 
 
+    public static readonly Error OwnerSellerRequired =
+        new("Product.OwnerSellerRequired", "Owner seller is required.");
+
+
+
+    public static readonly Error CannotModifyHidden =
+        new("Product.CannotModifyHidden", "Hidden product cannot be modified.");
+
+    public static readonly Error CannotHideArchived =
+        new("Product.CannotHideArchived", "Archived product cannot be hidden.");
+
+    public static readonly Error AdminRequired =
+        new("Product.AdminRequired", "Admin user is required.");
+
+    public static readonly Error HiddenReasonTooLong =
+        new("Product.HiddenReasonTooLong", "Hidden reason is too long.");
+
+    public static readonly Error ImageUrlTooLong =
+        new("Product.ImageUrlTooLong", "Image URL is too long.");
+
+
+    public static readonly Error CannotPublishHidden =
+    new("Product.CannotPublishHidden", "Hidden product cannot be published.");
+
+    public static readonly Error CannotUnpublishHidden =
+        new("Product.CannotUnpublishHidden", "Hidden product cannot be unpublished.");
+
+
+
+
+    public static readonly Error UrlRequired =
+        new("ProductImage.UrlRequired", "Image url is required.");
+
+    public static readonly Error StorageKeyRequired =
+        new("ProductImage.StorageKeyRequired", "StorageKey is required.");
+
+    public static readonly Error ContentTypeRequired =
+        new("ProductImage.ContentTypeRequired", "ContentType is required.");
+
+    public static readonly Error InvalidSize =
+        new("ProductImage.InvalidSize", "Invalid image size.");
+
+    public static readonly Error TooManyImages =
+        new("ProductImage.TooMany", "Too many images for this product.");
+
+    public static readonly Error ImageNotFound =
+        new("ProductImage.NotFound", "Image not found.");
+
+    public static readonly Error SortOrderInvalid =
+        new("ProductImage.SortOrderInvalid", "Invalid images order.");
+
+
 }

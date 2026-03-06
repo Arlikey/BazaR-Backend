@@ -1,105 +1,184 @@
 ﻿using BazaR.Backend.Domain.Catalog;
 using BazaR.Backend.Domain.Catalog.Products;
 using BazaR.Backend.Domain.Categories;
+using BazaR.Backend.Domain.Sellers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace BazaR.Backend.Infrastructure.Persistence.Configurations;
+namespace BazaR.Backend.Infrastructure.Persistence.Configurations.Catalog;
 
 public sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
 {
-    public void Configure(EntityTypeBuilder<Product> builder)
+    public void Configure(EntityTypeBuilder<Product> b)
     {
-        builder.ToTable("products");
+        b.ToTable("products");
 
-        builder.HasKey(x => x.Id);
+        b.HasKey(x => x.Id);
 
-        builder.Property(x => x.Id)
+        // =========================
+        // Id
+        // =========================
+        b.Property(x => x.Id)
             .HasColumnName("id")
             .ValueGeneratedNever()
             .HasConversion(
                 id => id.Value,
-                value => new ProductId(value)
-            );
+                value => new ProductId(value));
 
-        builder.Property(x => x.Name)
+        // =========================
+        // Ownership
+        // =========================
+        b.Property(x => x.OwnerSellerId)
+            .HasColumnName("owner_seller_id")
+            .IsRequired()
+            .HasConversion(
+                id => id.Value,
+                value => new SellerId(value));
+
+        // =========================
+        // Basic fields
+        // =========================
+        b.Property(x => x.Name)
             .HasColumnName("name")
             .HasMaxLength(200)
             .IsRequired();
 
-        builder.Property(x => x.Description)
+        b.Property(x => x.Description)
             .HasColumnName("description")
             .HasMaxLength(5000);
 
-        
-        builder.Property(x => x.CategoryId)
+        b.Property(x => x.CategoryId)
             .HasColumnName("category_id")
             .IsRequired()
             .HasConversion(
                 id => id.Value,
-                value => new CategoryId(value)
-            );
+                value => new CategoryId(value));
 
-        builder.Property(x => x.Status)
-            .HasColumnName("status")
-            .HasConversion<int>()
-            .IsRequired();
-
-        builder.Property(x => x.BrandId)
+        // BrandId? (nullable VO)
+        b.Property(x => x.BrandId)
             .HasColumnName("brand_id")
             .HasConversion(
                 id => id.HasValue ? id.Value.Value : (Guid?)null,
-                value => value.HasValue ? new BrandId(value.Value) : (BrandId?)null
-            );
+                value => value.HasValue ? new BrandId(value.Value) : null);
 
-        builder.Property(x => x.Slug)
+        // Slug? (nullable VO)
+        b.Property(x => x.Slug)
             .HasColumnName("slug")
             .HasMaxLength(200)
             .HasConversion(
                 slug => slug == null ? null : slug.Value,
-                value => value == null ? null : ProductSlug.Create(value).Value!
-            );
+                value => value == null ? null : ProductSlug.Create(value).Value!);
 
-        builder.Property(x => x.VendorCode)
+        // VendorCode? (nullable VO)
+        b.Property(x => x.VendorCode)
             .HasColumnName("vendor_code")
             .HasMaxLength(100)
             .HasConversion(
                 vc => vc == null ? null : vc.Value,
-                value => value == null ? null : VendorCode.Create(value).Value!
-            );
+                value => value == null ? null : VendorCode.Create(value).Value!);
 
-        builder.HasIndex(x => x.CategoryId)
+        // Barcode? (nullable VO)
+        b.Property(x => x.Barcode)
+            .HasColumnName("barcode")
+            .HasMaxLength(50)
+            .HasConversion(
+                bc => bc == null ? null : bc.Value,
+                value => value == null ? null : ProductBarcode.Create(value).Value!);
+
+        // =========================
+        // Status + moderation info
+        // =========================
+        b.Property(x => x.Status)
+            .HasColumnName("status")
+            .HasConversion<int>()
+            .IsRequired();
+
+        b.Property(x => x.HiddenAt)
+            .HasColumnName("hidden_at");
+
+        b.Property(x => x.HiddenBy)
+            .HasColumnName("hidden_by");
+
+        b.Property(x => x.HiddenReason)
+            .HasColumnName("hidden_reason")
+            .HasMaxLength(500);
+
+        // =========================
+        // Audit
+        // =========================
+        b.Property(x => x.CreatedAt)
+            .HasColumnName("created_at")
+            .IsRequired();
+
+        b.Property(x => x.UpdatedAt)
+            .HasColumnName("updated_at")
+            .IsRequired();
+
+        // =========================
+        // Indexes
+        // =========================
+        b.HasIndex(x => x.OwnerSellerId)
+            .HasDatabaseName("ix_products_owner_seller_id");
+
+        b.HasIndex(x => x.CategoryId)
             .HasDatabaseName("ix_products_category_id");
 
-        builder.HasIndex(x => x.Status)
+        b.HasIndex(x => x.Status)
             .HasDatabaseName("ix_products_status");
 
-        builder.HasIndex(x => x.Slug)
+        b.HasIndex(x => x.Barcode)
+            .HasDatabaseName("ix_products_barcode");
+
+        // Уникальность внутри продавца
+        b.HasIndex(x => new { x.OwnerSellerId, x.Slug })
             .IsUnique()
             .HasFilter("slug IS NOT NULL")
-            .HasDatabaseName("ux_products_slug");
+            .HasDatabaseName("ux_products_owner_slug");
 
-        builder.HasIndex(x => x.VendorCode)
+        b.HasIndex(x => new { x.OwnerSellerId, x.VendorCode })
             .IsUnique()
             .HasFilter("vendor_code IS NOT NULL")
-            .HasDatabaseName("ux_products_vendor_code");
+            .HasDatabaseName("ux_products_owner_vendor_code");
 
+        // =========================
+        // AttributeValues (collection)
+        // =========================
+        b.HasMany(x => x.AttributeValues)
+            .WithOne()
+            .HasForeignKey("product_id")
+            .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasMany(x => x.AttributeValues)
-      .WithOne()
-      .HasForeignKey("product_id")
-      .OnDelete(DeleteBehavior.Cascade);
+        var attrNav = b.Metadata.FindNavigation(nameof(Product.AttributeValues))!;
+        attrNav.SetPropertyAccessMode(PropertyAccessMode.Field);
+        attrNav.SetField("_attributeValues");
 
-        
-        builder.Metadata.FindNavigation(nameof(Product.AttributeValues))!
-            .SetPropertyAccessMode(PropertyAccessMode.Field);
+        // =========================
+        // Images (collection) – НОВОЕ
+        // =========================
+        b.HasMany(x => x.Images)
+            .WithOne()
+            .HasForeignKey("product_id")
+            .OnDelete(DeleteBehavior.Cascade);
 
-        builder.Ignore("DomainEvents");
+        var imagesNav = b.Metadata.FindNavigation(nameof(Product.Images))!;
+        imagesNav.SetPropertyAccessMode(PropertyAccessMode.Field);
+        imagesNav.SetField("_images");
 
-        builder.ToTable(t =>
+        // =========================
+        // Ignore domain events
+        // =========================
+        b.Ignore("DomainEvents");
+
+        // =========================
+        // Constraints
+        // =========================
+        b.ToTable(t =>
         {
             t.HasCheckConstraint("ck_products_name_not_empty", "char_length(name) > 0");
-            t.HasCheckConstraint("ck_products_status_valid", "status IN (0,1,2)");
+            t.HasCheckConstraint("ck_products_status_valid", "status IN (0,1,2,3)");
+            t.HasCheckConstraint(
+                "ck_products_hidden_fields",
+                "(status <> 3) OR (hidden_at IS NOT NULL AND hidden_by IS NOT NULL)");
         });
     }
-}
+} 

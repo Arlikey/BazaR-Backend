@@ -1,11 +1,15 @@
-﻿using BazaR.Backend.Application.Abstractions.Persistence;
+﻿using BazaR.Backend.Application.Abstractions.Files;
+using BazaR.Backend.Application.Abstractions.Persistence;
 using BazaR.Backend.Application.Abstractions.Repositories;
+using BazaR.Backend.Application.Common.Abstractions;
 using BazaR.Backend.Domain.Catalog;
 using BazaR.Backend.Domain.Catalog.Attributes;
 using BazaR.Backend.Domain.Catalog.Products;
 using BazaR.Backend.Domain.Categories;
 using BazaR.Backend.Domain.Common;
+using BazaR.Backend.Domain.Sellers;
 using MediatR;
+using System.Linq;
 
 namespace BazaR.Backend.Application.Catalog.Products.Commands.CreateProduct;
 
@@ -15,40 +19,83 @@ public sealed class CreateProductCommandHandler
     private readonly IProductRepository _products;
     private readonly ICategoryRepository _categories;
     private readonly IAttributeDefinitionRepository _attributes;
+    private readonly ISellerRepository _sellers;
+    private readonly ICurrentUser _current;
     private readonly IUnitOfWork _uow;
 
     public CreateProductCommandHandler(
         IProductRepository products,
         ICategoryRepository categories,
         IAttributeDefinitionRepository attributes,
+        ISellerRepository sellers,
+        ICurrentUser current,
         IUnitOfWork uow)
     {
         _products = products;
         _categories = categories;
         _attributes = attributes;
+        _sellers = sellers;
+        _current = current;
         _uow = uow;
     }
 
     public async Task<Result<ProductId>> Handle(CreateProductCommand request, CancellationToken ct)
     {
-        // 1) Загружаем категорию вместе с шаблоном атрибутов
-        var categoryId = request.CategoryId;
-        var category = await _categories.GetByIdWithAttributesAsync(categoryId, ct);
+        if (!_current.IsAuthenticated)
+            return Result<ProductId>.Failure(new Error("Auth.Required", "Authentication required."));
+
+        //1️ Получаем продавца текущего пользователя
+        var seller = await _sellers.GetByOwnerUserIdAsync(_current.UserId, ct);
+        if (seller is null)
+            return Result<ProductId>.Failure(new Error("Seller.NotFound", "Seller not found."));
+
+        if (seller.Status != SellerStatus.Active)
+            return Result<ProductId>.Failure(new Error("Seller.NotActive", "Seller must be active to create products."));
+
+        var ownerSellerId = seller.Id;
+
+        // 2️ Загружаем категорию с шаблоном атрибутов
+        var category = await _categories.GetByIdWithAttributesAsync(request.CategoryId, ct);
         if (category is null)
             return Result<ProductId>.Failure(CategoryErrors.NotFound);
 
-        // 2) Формируем BrandId (если передан)
+        // 3️ Проверка атрибутов
+        var inputs = request.Attributes ?? Array.Empty<ProductAttributeInput>();
+
+        var incomingGuids = inputs.Select(x => x.AttributeId).ToList();
+        if (incomingGuids.Count != incomingGuids.Distinct().Count())
+            return Result<ProductId>.Failure(ProductErrors.DuplicateAttributeInRequest);
+
+        var incomingSet = incomingGuids.ToHashSet();
+
+        var requiredGuids = category.Attributes
+            .Where(a => a.IsRequired)
+            .Select(a => a.AttributeId.Value)
+            .ToHashSet();
+
+        var missing = requiredGuids.Where(req => !incomingSet.Contains(req)).ToList();
+        if (missing.Count > 0)
+        {
+            return Result<ProductId>.Failure(new Error(
+                "Product.RequiredAttributesMissing",
+                $"Missing required attributes: {string.Join(", ", missing)}"
+            ));
+        }
+
+        // 4️ Создание продукта
         BrandId? brandId = request.BrandId.HasValue
             ? new BrandId(request.BrandId.Value)
             : null;
 
-        // 3) Создаём агрегат Product (базовые поля)
-        var productRes = Product.Create(
+        var productRes = Product.CreateBySeller(
+            ownerSellerId: ownerSellerId,
             name: request.Name,
-            categoryId: categoryId,
+            categoryId: request.CategoryId,
             brandId: brandId,
+            description: request.Description,
+            slug: request.Slug,
             vendorCode: request.VendorCode,
-            slug: request.Slug
+            barcode: request.Barcode
         );
 
         if (productRes.IsFailure)
@@ -56,82 +103,48 @@ public sealed class CreateProductCommandHandler
 
         var product = productRes.Value!;
 
-        // 4) Устанавливаем описание (если передано)
-        if (request.Description is not null)
-        {
-            var descRes = product.ChangeDescription(request.Description);
-            if (descRes.IsFailure)
-                return Result<ProductId>.Failure(descRes.Error);
-        }
-
-        // 5) Проверки уникальности (slug / vendorCode)
+        // 5️ Проверка уникальности slug внутри продавца
         if (product.Slug is not null)
         {
-            var exists = await _products.SlugExistsAsync(product.Slug, excludeProductId: null, ct);
+            var exists = await _products.SlugExistsForSellerAsync(
+                ownerSellerId,
+                product.Slug,
+                null,
+                ct);
+
             if (exists)
                 return Result<ProductId>.Failure(ProductErrors.SlugAlreadyExists);
         }
 
+        // 6️ Проверка уникальности vendorCode внутри продавца
         if (product.VendorCode is not null)
         {
-            var exists = await _products.VendorCodeExistsAsync(product.VendorCode, excludeProductId: null, ct);
+            var exists = await _products.VendorCodeExistsForSellerAsync(
+                ownerSellerId,
+                product.VendorCode,
+                null,
+                ct);
+
             if (exists)
                 return Result<ProductId>.Failure(ProductErrors.VendorCodeAlreadyExists);
         }
 
-        // =========================================================
-        // 6) Применение атрибутов продукта по шаблону категории
-        // =========================================================
-
-        // 6.1 Карта атрибутов категории (разрешённые / обязательные)
-        var template = category.Attributes.ToDictionary(a => a.AttributeId, a => a);
-
-        // Входные значения атрибутов (может быть null)
-        var inputs = request.Attributes ?? Array.Empty<ProductAttributeInput>();
-
-        // 6.2 Проверка на дубликаты атрибутов в запросе
-        var incomingAttrIds = inputs.Select(x => new AttributeId(x.AttributeId)).ToList();
-        if (incomingAttrIds.Count != incomingAttrIds.Distinct().Count())
-            return Result<ProductId>.Failure(ProductErrors.DuplicateAttributeInRequest);
-
-        // 6.3 Проверка: атрибут разрешён для категории
-        foreach (var id in incomingAttrIds)
-        {
-            if (!template.ContainsKey(id))
-                return Result<ProductId>.Failure(ProductErrors.AttributeNotAllowedForCategory);
-        }
-
-        // 6.4 Проверка обязательных атрибутов
-        var requiredIds = category.Attributes
-            .Where(a => a.IsRequired)
-            .Select(a => a.AttributeId)
-            .ToHashSet();
-
-        foreach (var reqId in requiredIds)
-        {
-            if (!incomingAttrIds.Contains(reqId))
-                return Result<ProductId>.Failure(ProductErrors.RequiredAttributesMissing);
-        }
-
-        // 6.5 Загружаем определения атрибутов (включая options)
-        var allNeeded = incomingAttrIds.Union(requiredIds).ToList();
-        var defs = await _attributes.GetByIdsAsync(allNeeded, ct);
+        // 7️ Загрузка определений атрибутов
+        var attrIds = incomingSet.Select(x => new AttributeId(x)).ToList();
+        var defs = await _attributes.GetByIdsAsync(attrIds, ct);
         var defMap = defs.ToDictionary(d => d.Id, d => d);
 
-        // Проверка, что все определения существуют
-        foreach (var id in allNeeded)
+        foreach (var id in attrIds)
         {
             if (!defMap.ContainsKey(id))
                 return Result<ProductId>.Failure(AttributeErrors.NotFound);
         }
 
-        // 6.6 Устанавливаем значения атрибутов в продукт
+        // 8️ Установка атрибутов
         foreach (var input in inputs)
         {
-            var attrId = new AttributeId(input.AttributeId);
-            var def = defMap[attrId];
+            var def = defMap[new AttributeId(input.AttributeId)];
 
-            // Валидация значений и options происходит внутри домена
             var res = product.SetAttributeValue(
                 def,
                 text: input.TextValue,
@@ -145,10 +158,12 @@ public sealed class CreateProductCommandHandler
                 return Result<ProductId>.Failure(res.Error);
         }
 
-        // 7) Сохраняем продукт
+        // 9️ Сохраняем
         _products.Add(product);
         await _uow.SaveChangesAsync(ct);
 
         return Result<ProductId>.Success(product.Id);
     }
 }
+
+

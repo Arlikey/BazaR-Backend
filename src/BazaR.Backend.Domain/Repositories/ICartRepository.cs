@@ -1,12 +1,19 @@
-﻿using BazaR.Backend.Domain.Carts;
+﻿// Application/Abstractions/Repositories/ICartRepository.cs
+using BazaR.Backend.Domain.Carts;
 using BazaR.Backend.Domain.Users;
 
-namespace BazaR.Backend.Domain.Repositories;
+namespace BazaR.Backend.Application.Abstractions.Repositories;
 
 public interface ICartRepository
 {
-    Task<Cart?> GetByUserId(UserId userId);
+    Task<Cart?> GetByIdAsync(CartId id, CancellationToken ct = default);
 
-    Task Add(Cart cart);
-    Task Update(Cart cart);
+    
+    Task<Cart?> GetByUserIdAsync(UserId userId, CancellationToken ct = default);
+
+   
+    Task<Cart?> GetActiveByUserIdAsync(UserId userId, CancellationToken ct = default);
+
+    void Add(Cart cart);
+    void Update(Cart cart);
 }

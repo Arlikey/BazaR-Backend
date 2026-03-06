@@ -8,9 +8,12 @@ public sealed class Category : AggregateRoot<CategoryId>
 {
     private const int MaxNameLength = 200;
 
-   
     private readonly List<CategoryAttribute> _attributes = new();
     public IReadOnlyCollection<CategoryAttribute> Attributes => _attributes.AsReadOnly();
+
+    // Image с backing field
+    private CategoryImage? _image;
+    public CategoryImage? Image => _image;
 
     public string Name { get; private set; } = default!;
     public CategoryId? ParentCategoryId { get; private set; }
@@ -26,7 +29,6 @@ public sealed class Category : AggregateRoot<CategoryId>
 
     private Category() { } 
 
-    // Единственная фабрика: root и subcategory отличаются только parentCategoryId
     public static Result<Category> Create(string name, CategoryId? parentCategoryId = null, int sortOrder = 0)
     {
         if (string.IsNullOrWhiteSpace(name))
@@ -62,7 +64,6 @@ public sealed class Category : AggregateRoot<CategoryId>
         return Result.Success();
     }
 
-    // Один метод перемещения
     public Result Move(CategoryId? newParentCategoryId, int newSortOrder = 0)
     {
         if (newParentCategoryId.HasValue && newParentCategoryId.Value == Id)
@@ -81,9 +82,7 @@ public sealed class Category : AggregateRoot<CategoryId>
         return Result.Success();
     }
 
-    // =========================================================
-    // CategoryAttribute management (шаблон характеристик категории)
-    // =========================================================
+    // ========== Attributes ==========
 
     public Result AddAttribute(
         AttributeId attributeId,
@@ -93,7 +92,6 @@ public sealed class Category : AggregateRoot<CategoryId>
         string? sectionName = null,
         int? sectionOrder = null)
     {
-        // уникальность AttributeId внутри категории
         if (_attributes.Any(x => x.AttributeId == attributeId))
             return Result.Failure(CategoryAttributeErrors.DuplicateAttributeInCategory);
 
@@ -116,7 +114,7 @@ public sealed class Category : AggregateRoot<CategoryId>
     {
         var existing = _attributes.SingleOrDefault(x => x.AttributeId == attributeId);
         if (existing is null)
-            return Result.Success(); 
+            return Result.Success();
 
         _attributes.Remove(existing);
         return Result.Success();
@@ -126,7 +124,7 @@ public sealed class Category : AggregateRoot<CategoryId>
     {
         var existing = _attributes.SingleOrDefault(x => x.AttributeId == attributeId);
         if (existing is null)
-            return Result.Failure(CategoryErrors.NotFound); 
+            return Result.Failure(CategoryErrors.NotFound);
 
         return existing.UpdateRules(isRequired, isFilterable);
     }
@@ -147,5 +145,38 @@ public sealed class Category : AggregateRoot<CategoryId>
             return Result.Failure(CategoryErrors.NotFound);
 
         return existing.SetSection(sectionName, sectionOrder);
+    }
+
+    // ========== Image ==========
+
+    public Result SetImage(string url, string storageKey, string contentType, long sizeBytes)
+    {
+        var now = DateTimeOffset.UtcNow;
+
+        var created = CategoryImage.Create(url, storageKey, contentType, sizeBytes, now);
+        if (created.IsFailure)
+            return Result.Failure(created.Error);
+
+        if (_image is null)
+        {
+            _image = created.Value;
+        }
+        else
+        {
+            _image.Replace(url, storageKey, contentType, sizeBytes, now);
+        }
+
+        
+
+        return Result.Success();
+    }
+
+    public Result RemoveImage()
+    {
+        if (_image is null)
+            return Result.Success();
+
+        _image = null;
+        return Result.Success();
     }
 }

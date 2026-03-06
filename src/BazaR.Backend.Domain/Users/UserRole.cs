@@ -8,8 +8,8 @@ namespace BazaR.Backend.Domain.Users
 {
     public enum UserRole
     {
-        None = 0,
-        Customer = 1,
+        Customer = 0,
+        Seller = 1,
         Admin = 2
     }
 

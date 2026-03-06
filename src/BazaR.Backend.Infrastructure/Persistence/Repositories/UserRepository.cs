@@ -1,4 +1,4 @@
-﻿using BazaR.Backend.Domain.Repositories;
+﻿using BazaR.Backend.Application.Abstractions.Repositories;
 using BazaR.Backend.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,21 +10,69 @@ public sealed class UserRepository : IUserRepository
 
     public UserRepository(AppDbContext db) => _db = db;
 
-    public Task<User?> GetById(UserId id)
-        => _db.Users.FirstOrDefaultAsync(x => x.Id == id);
+    public async Task<User?> GetByIdAsync(UserId id, CancellationToken ct = default)
+        => await _db.Users
+            .FirstOrDefaultAsync(x => x.Id == id, ct);
 
-    public Task<User?> GetByEmail(Email email)
-        => _db.Users.FirstOrDefaultAsync(x => x.Email.Value == email.Value);
-
-    public Task Add(User user)
+    public async Task<User?> GetByEmailAsync(string email, CancellationToken ct = default)
     {
-        _db.Users.Add(user);
-        return Task.CompletedTask;
+        var normalized = NormalizeEmail(email);
+        if (normalized is null) return null;
+
+        return await _db.Users
+            .FirstOrDefaultAsync(x => x.Email.Value == normalized, ct);
     }
 
-    public Task Update(User user)
+    public async Task<User?> GetByPhoneAsync(string phone, CancellationToken ct = default)
     {
-        _db.Users.Update(user);
-        return Task.CompletedTask;
+        var normalized = NormalizePhone(phone);
+        if (normalized is null) return null;
+
+        return await _db.Users
+            .FirstOrDefaultAsync(x => x.Phone != null && x.Phone.Value == normalized, ct);
+    }
+
+    public async Task<bool> EmailExistsAsync(string email, UserId? excludeUserId = null, CancellationToken ct = default)
+    {
+        var normalized = NormalizeEmail(email);
+        if (normalized is null) return false;
+
+        var q = _db.Users.AsQueryable();
+
+        if (excludeUserId is not null)
+            q = q.Where(x => x.Id != excludeUserId);
+
+        return await q.AnyAsync(x => x.Email.Value == normalized, ct);
+    }
+
+    public async Task<bool> PhoneExistsAsync(string phone, UserId? excludeUserId = null, CancellationToken ct = default)
+    {
+        var normalized = NormalizePhone(phone);
+        if (normalized is null) return false;
+
+        var q = _db.Users.AsQueryable();
+
+        if (excludeUserId is not null)
+            q = q.Where(x => x.Id != excludeUserId);
+
+        return await q.AnyAsync(x => x.Phone != null && x.Phone.Value == normalized, ct);
+    }
+
+    public void Add(User user) => _db.Users.Add(user);
+
+    public void Update(User user) => _db.Users.Update(user);
+
+    public void Remove(User user) => _db.Users.Remove(user);
+
+    private static string? NormalizeEmail(string email)
+    {
+        if (string.IsNullOrWhiteSpace(email)) return null;
+        return email.Trim().ToLowerInvariant();
+    }
+
+    private static string? NormalizePhone(string phone)
+    {
+        if (string.IsNullOrWhiteSpace(phone)) return null;
+        return phone.Trim();
     }
 }

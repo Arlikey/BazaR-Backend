@@ -1,14 +1,13 @@
 ﻿using BazaR.Backend.Domain.Carts;
-using BazaR.Backend.Domain.Catalog.Products;
 using BazaR.Backend.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace BazaR.Backend.Infrastructure.Persistence.Configurations.Cart;
+namespace BazaR.Backend.Infrastructure.Persistence.Configurations;
 
-public sealed class CartConfiguration : IEntityTypeConfiguration<BazaR.Backend.Domain.Carts.Cart>
+public sealed class CartConfiguration : IEntityTypeConfiguration<Cart>
 {
-    public void Configure(EntityTypeBuilder<BazaR.Backend.Domain.Carts.Cart> builder)
+    public void Configure(EntityTypeBuilder<Cart> builder)
     {
         builder.ToTable("carts");
 
@@ -16,46 +15,57 @@ public sealed class CartConfiguration : IEntityTypeConfiguration<BazaR.Backend.D
 
         builder.Property(x => x.Id)
             .HasColumnName("id")
-            .HasConversion(id => id.Value, value => new CartId(value))
-            .ValueGeneratedNever();
+            .ValueGeneratedNever()
+            .HasConversion(
+                id => id.Value,
+                value => new CartId(value));
 
         builder.Property(x => x.UserId)
             .HasColumnName("user_id")
-            .HasConversion(id => id.Value, value => new UserId(value))
+            .HasConversion(
+                id => id.Value,
+                value => new UserId(value))
             .IsRequired();
 
-        builder.HasIndex(x => x.UserId).IsUnique(); 
+        builder.HasIndex(x => x.UserId);
+
+        builder.Property(x => x.Status)
+            .HasColumnName("status")
+            .HasConversion<string>()
+            .HasMaxLength(50)
+            .IsRequired();
+
+        builder.Property(x => x.Currency)
+            .HasColumnName("currency")
+            .HasMaxLength(3)
+            .IsRequired();
+
+        builder.Property(x => x.CreatedAt)
+            .HasColumnName("created_at")
+            .IsRequired();
+
+        builder.Property(x => x.UpdatedAt)
+            .HasColumnName("updated_at")
+            .IsRequired();
+
+        builder.Property(x => x.LastActivityAt)
+            .HasColumnName("last_activity_at");
+
+        builder.HasIndex(x => x.UpdatedAt);
+        builder.HasIndex(x => x.LastActivityAt);
+
+        builder.Ignore(x => x.ItemsCount);
+        builder.Ignore(x => x.TotalQuantity);
+        builder.Ignore(x => x.TotalPrice);
         builder.Ignore(x => x.Items);
+        builder.Ignore(x => x.DomainEvents);
 
-        // Items: private List<CartItem> _items
-        builder.OwnsMany<CartItem>("_items", items =>
-        {
-            items.ToTable("cart_items");
-            items.WithOwner().HasForeignKey("cart_id");
+        builder.HasMany<CartItem>("_items")
+            .WithOne()
+            .HasForeignKey(x => x.CartId)
+            .OnDelete(DeleteBehavior.Cascade);
 
-            items.Property(x => x.Id).HasColumnName("id");
-            items.HasKey(x => x.Id);
-
-            items.Property(x => x.ProductId)
-                .HasColumnName("product_id")
-                .HasConversion(id => id.Value, value => new ProductId(value))
-                .IsRequired();
-
-            items.Property(x => x.Quantity)
-                .HasColumnName("quantity")
-                .IsRequired();
-
-            items.OwnsOne(x => x.PriceSnapshot, price =>
-            {
-                price.Property(p => p.Amount).HasColumnName("price_amount").IsRequired();
-                price.Property(p => p.Currency).HasColumnName("price_currency").HasMaxLength(3).IsRequired();
-            });
-
-            
-            items.HasIndex("cart_id", nameof(CartItem.ProductId)).IsUnique();
-        });
-
-
-        builder.Navigation("_items").UsePropertyAccessMode(PropertyAccessMode.Field);
+        builder.Navigation("_items")
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }

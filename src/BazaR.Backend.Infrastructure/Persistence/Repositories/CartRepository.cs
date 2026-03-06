@@ -1,8 +1,7 @@
-﻿using BazaR.Backend.Domain.Carts;
-
-using BazaR.Backend.Domain.Repositories;
+﻿// Infrastructure/Persistence/Repositories/CartRepository.cs
+using BazaR.Backend.Application.Abstractions.Repositories;
+using BazaR.Backend.Domain.Carts;
 using BazaR.Backend.Domain.Users;
-using BazaR.Backend.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace BazaR.Backend.Infrastructure.Persistence.Repositories;
@@ -10,23 +9,23 @@ namespace BazaR.Backend.Infrastructure.Persistence.Repositories;
 public sealed class CartRepository : ICartRepository
 {
     private readonly AppDbContext _db;
-
     public CartRepository(AppDbContext db) => _db = db;
 
-    public Task<Cart?> GetByUserId(UserId userId)
-        => _db.Carts
+    public async Task<Cart?> GetByIdAsync(CartId id, CancellationToken ct = default)
+        => await _db.Carts
+            .Include("_items") 
+            .FirstOrDefaultAsync(x => x.Id == id, ct);
+
+    public async Task<Cart?> GetByUserIdAsync(UserId userId, CancellationToken ct = default)
+        => await _db.Carts
             .Include("_items")
-            .FirstOrDefaultAsync(x => x.UserId == userId);
+            .FirstOrDefaultAsync(x => x.UserId == userId, ct);
 
-    public Task Add(Cart cart)
-    {
-        _db.Carts.Add(cart);
-        return Task.CompletedTask;
-    }
+    public async Task<Cart?> GetActiveByUserIdAsync(UserId userId, CancellationToken ct = default)
+        => await _db.Carts
+            .Include("_items")
+            .FirstOrDefaultAsync(x => x.UserId == userId && x.Status == CartStatus.Active, ct);
 
-    public Task Update(Cart cart)
-    {
-        _db.Carts.Update(cart);
-        return Task.CompletedTask;
-    }
+    public void Add(Cart cart) => _db.Carts.Add(cart);
+    public void Update(Cart cart) => _db.Carts.Update(cart);
 }

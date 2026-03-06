@@ -1,36 +1,91 @@
-﻿using BazaR.Backend.Domain.Catalog.Products;
+﻿using BazaR.Backend.Domain.Carts;
 using BazaR.Backend.Domain.Common;
-
-namespace BazaR.Backend.Domain.Carts;
+using BazaR.Backend.Domain.Sales;
 
 public sealed class CartItem : Entity<Guid>
 {
-    public ProductId ProductId { get; private set; }
+    public CartId CartId { get; private set; } = default!;
+    public OfferId OfferId { get; private set; } = default!;
     public int Quantity { get; private set; }
-    public Money PriceSnapshot { get; private set; } = default!;
 
-    internal CartItem(ProductId productId, int quantity, Money priceSnapshot)
-        : base(Guid.NewGuid())
+    public MoneySnapshot PriceSnapshot { get; private set; } = default!;
+
+    public DateTimeOffset AddedAt { get; private set; }
+    public DateTimeOffset UpdatedAt { get; private set; }
+
+    private CartItem(
+        Guid id,
+        CartId cartId,
+        OfferId offerId,
+        int quantity,
+        MoneySnapshot priceSnapshot,
+        DateTimeOffset nowUtc)
+        : base(id)
     {
-        ProductId = productId;
+        CartId = cartId;
+        OfferId = offerId;
         Quantity = quantity;
         PriceSnapshot = priceSnapshot;
+
+        AddedAt = nowUtc;
+        UpdatedAt = nowUtc;
     }
 
     private CartItem() { } 
 
-    internal void Increase(int value)
+    internal static Result<CartItem> Create(
+        CartId cartId,
+        OfferId offerId,
+        int quantity,
+        MoneySnapshot priceSnapshot,
+        DateTimeOffset nowUtc)
     {
-        Quantity += value;
+        if (cartId.Value == Guid.Empty)
+            return Result<CartItem>.Failure(new Error("CartItem.CartRequired", "Cart is required."));
+
+        if (offerId.Value == Guid.Empty)
+            return Result<CartItem>.Failure(CartErrors.OfferRequired);
+
+        if (quantity < 1)
+            return Result<CartItem>.Failure(CartErrors.QuantityMustBePositive);
+
+        return Result<CartItem>.Success(
+            new CartItem(Guid.NewGuid(), cartId, offerId, quantity, priceSnapshot, nowUtc));
     }
 
-    internal void SetQuantity(int value)
+    internal Result Increase(int delta, int maxPerItem, DateTimeOffset nowUtc)
     {
-        Quantity = value;
+        if (delta < 1)
+            return Result.Failure(CartErrors.QuantityMustBePositive);
+
+        var newQty = Quantity + delta;
+        if (newQty > maxPerItem)
+            return Result.Failure(CartErrors.MaxQuantityExceeded);
+
+        Quantity = newQty;
+        UpdatedAt = nowUtc;
+        return Result.Success();
     }
 
-    internal void UpdatePriceSnapshot(Money priceSnapshot)
+    internal Result SetQuantity(int newQuantity, int maxPerItem, DateTimeOffset nowUtc)
     {
-        PriceSnapshot = priceSnapshot;
+        if (newQuantity < 1)
+            return Result.Failure(CartErrors.QuantityMustBePositive);
+
+        if (newQuantity > maxPerItem)
+            return Result.Failure(CartErrors.MaxQuantityExceeded);
+
+        if (Quantity == newQuantity)
+            return Result.Success();
+
+        Quantity = newQuantity;
+        UpdatedAt = nowUtc;
+        return Result.Success();
+    }
+
+    internal void UpdatePriceSnapshot(MoneySnapshot snapshot, DateTimeOffset nowUtc)
+    {
+        PriceSnapshot = snapshot;
+        UpdatedAt = nowUtc;
     }
 }

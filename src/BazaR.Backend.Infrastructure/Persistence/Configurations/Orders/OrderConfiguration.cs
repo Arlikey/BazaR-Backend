@@ -40,7 +40,7 @@ public sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
             a.Property(p => p.Apartment).HasColumnName("apartment").HasMaxLength(50);
         });
 
-        // Items: private List<OrderItem> _items
+        
         builder.OwnsMany<OrderItem>("_items", items =>
         {
             items.ToTable("order_items");
