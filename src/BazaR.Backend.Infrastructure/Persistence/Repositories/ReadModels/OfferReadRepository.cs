@@ -3,6 +3,7 @@ using BazaR.Backend.Application.Catalog.Offers.DTOs;
 using BazaR.Backend.Application.Sellers.DTOs;
 using BazaR.Backend.Domain.Catalog.Products;
 using BazaR.Backend.Domain.Sales;
+using BazaR.Backend.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
 
@@ -14,26 +15,66 @@ public sealed class OfferReadRepository : IOfferReadRepository
 
     public OfferReadRepository(AppDbContext db) => _db = db;
 
-    public async Task<IReadOnlyList<OfferCardDto>> GetByProductCardIdsAsync(
+    /* public async Task<IReadOnlyList<OfferCardDto>> GetByProductCardIdsAsync(
+     IReadOnlyCollection<Guid> productIds,
+     CancellationToken ct)
+     {
+         if (productIds == null || productIds.Count == 0)
+             return Array.Empty<OfferCardDto>();
+
+         var productVoIds = productIds
+             .Select(id => new ProductId(id))
+             .ToList();
+
+         return await _db.Offers
+             .AsNoTracking()
+             .Where(o => productVoIds.Contains(o.ProductId))
+             .Select(o => new OfferCardDto(
+                 o.ProductId.Value,
+                 o.Price != null ? o.Price.Amount : (decimal?)null,
+                 o.Price != null ? o.Price.Currency : null,
+                 o.OldPrice != null ? o.OldPrice.Amount : (decimal?)null,
+                 o.Stock > 0
+             ))
+             .ToListAsync(ct);
+     }*/
+
+    public async Task<IReadOnlyList<OfferCardReadDto>> GetByProductCardIdsAsync(
     IReadOnlyCollection<Guid> productIds,
+    UserId? userId,
     CancellationToken ct)
     {
         if (productIds == null || productIds.Count == 0)
-            return Array.Empty<OfferCardDto>();
+            return Array.Empty<OfferCardReadDto>();
 
         var productVoIds = productIds
             .Select(id => new ProductId(id))
             .ToList();
 
+        HashSet<ProductId> favoriteIds = [];
+
+        if (userId is not null)
+        {
+            var favoriteIdsList = await _db.Favorites
+                .AsNoTracking()
+                .Where(f => f.UserId == userId && productVoIds.Contains(f.ProductId))
+                .Select(f => f.ProductId)
+                .ToListAsync(ct);
+
+            favoriteIds = favoriteIdsList.ToHashSet();
+        }
+
         return await _db.Offers
             .AsNoTracking()
             .Where(o => productVoIds.Contains(o.ProductId))
-            .Select(o => new OfferCardDto(
+            .Select(o => new OfferCardReadDto(
                 o.ProductId.Value,
+                o.Id.Value,
                 o.Price != null ? o.Price.Amount : (decimal?)null,
                 o.Price != null ? o.Price.Currency : null,
                 o.OldPrice != null ? o.OldPrice.Amount : (decimal?)null,
-                o.Stock > 0
+                o.Stock,
+                favoriteIds.Contains(o.ProductId)
             ))
             .ToListAsync(ct);
     }

@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿/*using System.Collections.Generic;
 using BazaR.Backend.Domain.Common;
 
 namespace BazaR.Backend.Domain.Orders;
@@ -18,6 +18,7 @@ public sealed class Address : ValueObject
         Apartment = apartment;
     }
 
+    private Address() { }
     public static Result<Address> Create(string country, string city, string street, string? apartment = null)
     {
         if (string.IsNullOrWhiteSpace(country)) return Result<Address>.Failure(OrderErrors.AddressInvalid);
@@ -45,3 +46,4 @@ public sealed class Address : ValueObject
             ? $"{Country}, {City}, {Street}"
             : $"{Country}, {City}, {Street}, apt {Apartment}";
 }
+*/

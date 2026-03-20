@@ -4,7 +4,7 @@ namespace BazaR.Backend.Domain.Repositories;
 
 public interface IOrderRepository
 {
-    Task<Order?> GetById(OrderId id);
+    Task<Order?> GetByIdAsync(OrderId id, CancellationToken cancellationToken = default);
     Task Add(Order order);
     Task Update(Order order);
 }

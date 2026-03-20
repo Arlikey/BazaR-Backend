@@ -52,11 +52,35 @@ namespace BazaR.Backend.Application.Catalog.Offers.DTOs
     string Status,
     OfferCatalogReadModel? Offer);
 
-    public sealed record OfferCardDto(
+    /*public sealed record OfferCardDto(
     Guid ProductId,
     decimal? PriceAmount,
     string? PriceCurrency,
     decimal? OldPriceAmount,
     bool InStock
-    );
+    );*/
+
+    public sealed record OfferCardReadDto(
+     Guid ProductId,
+     Guid OfferId,
+     decimal? PriceAmount,
+     string? PriceCurrency,
+     decimal? OldPriceAmount,
+     int StockQuantity,
+     bool IsFavorite);
+
+
+    public sealed record OfferCardDto(
+    Guid Id,
+    decimal? PriceAmount,
+    string? PriceCurrency,
+    decimal? OldPriceAmount,
+    int StockQuantity,
+    bool IsFavorite
+);
+
+
+
+
+
 }

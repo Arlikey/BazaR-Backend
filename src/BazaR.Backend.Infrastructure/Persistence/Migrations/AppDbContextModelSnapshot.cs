@@ -376,6 +376,87 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("BazaR.Backend.Domain.Checkouts.Checkout", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("CancelledAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("cancelled_at_utc");
+
+                    b.Property<Guid>("CartId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cart_id");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime?>("SubmittedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("submitted_at_utc");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CartId")
+                        .HasDatabaseName("ix_checkouts_cart_id");
+
+                    b.HasIndex("CreatedAtUtc")
+                        .HasDatabaseName("ix_checkouts_created_at_utc");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_checkouts_status");
+
+                    b.HasIndex("SubmittedAtUtc")
+                        .HasDatabaseName("ix_checkouts_submitted_at_utc");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_checkouts_user_id");
+
+                    b.ToTable("checkouts", (string)null);
+                });
+
+            modelBuilder.Entity("BazaR.Backend.Domain.Favorites.Favorite", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("product_id");
+
+                    b.Property<DateTime>("AddedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("added_at_utc");
+
+                    b.HasKey("UserId", "ProductId");
+
+                    b.HasIndex("ProductId")
+                        .HasDatabaseName("ix_favorites_product_id");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_favorites_user_id");
+
+                    b.ToTable("favorites", (string)null);
+                });
+
             modelBuilder.Entity("BazaR.Backend.Domain.Identity.AuthUser", b =>
                 {
                     b.Property<Guid>("Id")
@@ -410,9 +491,391 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("integer")
+                    b.Property<Guid?>("BuyerUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("buyer_user_id");
+
+                    b.Property<string>("CancellationReason")
+                        .HasColumnType("text")
+                        .HasColumnName("cancellation_reason");
+
+                    b.Property<DateTimeOffset?>("CancelledAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("cancelled_at_utc");
+
+                    b.Property<DateTimeOffset?>("CompletedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at_utc");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("CustomerComment")
+                        .HasColumnType("text")
+                        .HasColumnName("customer_comment");
+
+                    b.Property<DateTimeOffset?>("DeliveredAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("delivered_at_utc");
+
+                    b.Property<DateTimeOffset?>("PaidAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("paid_at_utc");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BuyerUserId")
+                        .HasDatabaseName("ix_orders_buyer_user_id");
+
+                    b.HasIndex("CompletedAtUtc")
+                        .HasDatabaseName("ix_orders_completed_at_utc");
+
+                    b.HasIndex("CreatedAtUtc")
+                        .HasDatabaseName("ix_orders_created_at_utc");
+
+                    b.HasIndex("DeliveredAtUtc")
+                        .HasDatabaseName("ix_orders_delivered_at_utc");
+
+                    b.HasIndex("PaidAtUtc")
+                        .HasDatabaseName("ix_orders_paid_at_utc");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_orders_status");
+
+                    b.ToTable("orders", (string)null);
+                });
+
+            modelBuilder.Entity("BazaR.Backend.Domain.Orders.OrderItem", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<int>("CancelledQuantity")
+                        .HasColumnType("integer")
+                        .HasColumnName("cancelled_quantity");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("order_id");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("product_id");
+
+                    b.Property<string>("ProductName")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("product_name");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer")
+                        .HasColumnName("quantity");
+
+                    b.Property<string>("Sku")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("sku");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId")
+                        .HasDatabaseName("ix_order_items_order_id");
+
+                    b.HasIndex("ProductId")
+                        .HasDatabaseName("ix_order_items_product_id");
+
+                    b.HasIndex("OrderId", "ProductId")
+                        .HasDatabaseName("ix_order_items_order_id_product_id");
+
+                    b.ToTable("order_items", (string)null);
+                });
+
+            modelBuilder.Entity("BazaR.Backend.Domain.PaymentProfiles.PaymentMethodConfig", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_enabled");
+
+                    b.Property<decimal?>("MaxAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("max_amount");
+
+                    b.Property<string>("MethodType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("method_type");
+
+                    b.Property<decimal?>("MinAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("min_amount");
+
+                    b.Property<Guid>("PaymentProfileId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("payment_profile_id");
+
+                    b.Property<bool>("RequiresBankAccount")
+                        .HasColumnType("boolean")
+                        .HasColumnName("requires_bank_account");
+
+                    b.Property<bool>("RequiresLiqPay")
+                        .HasColumnType("boolean")
+                        .HasColumnName("requires_liqpay");
+
+                    b.Property<bool>("RequiresOnlineAuthorization")
+                        .HasColumnType("boolean")
+                        .HasColumnName("requires_online_authorization");
+
+                    b.Property<string>("Title")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("title");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MethodType")
+                        .HasDatabaseName("ix_payment_profile_methods_method_type");
+
+                    b.HasIndex("PaymentProfileId")
+                        .HasDatabaseName("ix_payment_profile_methods_profile_id");
+
+                    b.HasIndex("PaymentProfileId", "MethodType")
+                        .IsUnique()
+                        .HasDatabaseName("ux_payment_profile_methods_profile_id_method_type");
+
+                    b.ToTable("payment_profile_methods", (string)null);
+                });
+
+            modelBuilder.Entity("BazaR.Backend.Domain.PaymentProfiles.PaymentProfile", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<Guid>("SellerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("seller_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAtUtc")
+                        .HasDatabaseName("ix_payment_profiles_created_at_utc");
+
+                    b.HasIndex("SellerId")
+                        .HasDatabaseName("ix_payment_profiles_seller_id");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_payment_profiles_status");
+
+                    b.ToTable("payment_profiles", (string)null);
+                });
+
+            modelBuilder.Entity("BazaR.Backend.Domain.Payments.Payment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ActualLiqPayPayType")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("actual_liqpay_pay_type");
+
+                    b.Property<DateTimeOffset?>("AuthorizedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("authorized_at_utc");
+
+                    b.Property<string>("CallbackData")
+                        .HasColumnType("text")
+                        .HasColumnName("callback_data");
+
+                    b.Property<DateTimeOffset?>("CallbackReceivedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("callback_received_at_utc");
+
+                    b.Property<string>("CallbackSignature")
+                        .HasColumnType("text")
+                        .HasColumnName("callback_signature");
+
+                    b.Property<DateTimeOffset?>("CancelledAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("cancelled_at_utc");
+
+                    b.Property<string>("CardBank")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("card_bank");
+
+                    b.Property<string>("CardMask")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("card_mask");
+
+                    b.Property<string>("CardType")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("card_type");
+
+                    b.Property<string>("CheckoutActionUrl")
+                        .HasColumnType("text")
+                        .HasColumnName("checkout_action_url");
+
+                    b.Property<string>("CheckoutData")
+                        .HasColumnType("text")
+                        .HasColumnName("checkout_data");
+
+                    b.Property<string>("CheckoutSignature")
+                        .HasColumnType("text")
+                        .HasColumnName("checkout_signature");
+
+                    b.Property<DateTimeOffset?>("CheckoutStartedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("checkout_started_at_utc");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("ExternalOrderReference")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("external_order_reference");
+
+                    b.Property<string>("ExternalPaymentId")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("external_payment_id");
+
+                    b.Property<string>("ExternalSessionId")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("external_session_id");
+
+                    b.Property<string>("ExternalStatus")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("external_status");
+
+                    b.Property<string>("ExternalTransactionId")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("external_transaction_id");
+
+                    b.Property<DateTimeOffset?>("FailedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("failed_at_utc");
+
+                    b.Property<string>("FailureCode")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("failure_code");
+
+                    b.Property<string>("FailureMessage")
+                        .HasColumnType("text")
+                        .HasColumnName("failure_message");
+
+                    b.Property<DateTimeOffset?>("LastProviderSyncAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_provider_sync_at_utc");
+
+                    b.Property<string>("MerchantOrderReference")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("merchant_order_reference");
+
+                    b.Property<string>("Method")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("method");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("order_id");
+
+                    b.Property<DateTimeOffset?>("PaidAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("paid_at_utc");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("provider");
+
+                    b.Property<decimal?>("ProviderAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("provider_amount");
+
+                    b.Property<string>("ProviderCurrency")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("provider_currency");
+
+                    b.Property<DateTimeOffset?>("RefundedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("refunded_at_utc");
+
+                    b.Property<string>("RequestedLiqPayPayType")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("requested_liqpay_pay_type");
+
+                    b.Property<Guid>("SellerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("seller_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid")
@@ -420,7 +883,47 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("orders", (string)null);
+                    b.HasIndex("CreatedAtUtc")
+                        .HasDatabaseName("ix_payments_created_at_utc");
+
+                    b.HasIndex("ExternalOrderReference")
+                        .HasDatabaseName("ix_payments_external_order_reference");
+
+                    b.HasIndex("ExternalPaymentId")
+                        .HasDatabaseName("ix_payments_external_payment_id");
+
+                    b.HasIndex("ExternalSessionId")
+                        .HasDatabaseName("ix_payments_external_session_id");
+
+                    b.HasIndex("ExternalTransactionId")
+                        .HasDatabaseName("ix_payments_external_transaction_id");
+
+                    b.HasIndex("MerchantOrderReference")
+                        .IsUnique()
+                        .HasDatabaseName("ux_payments_merchant_order_reference");
+
+                    b.HasIndex("Method")
+                        .HasDatabaseName("ix_payments_method");
+
+                    b.HasIndex("OrderId")
+                        .HasDatabaseName("ix_payments_order_id");
+
+                    b.HasIndex("PaidAtUtc")
+                        .HasDatabaseName("ix_payments_paid_at_utc");
+
+                    b.HasIndex("Provider")
+                        .HasDatabaseName("ix_payments_provider");
+
+                    b.HasIndex("SellerId")
+                        .HasDatabaseName("ix_payments_seller_id");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_payments_status");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_payments_user_id");
+
+                    b.ToTable("payments", (string)null);
                 });
 
             modelBuilder.Entity("BazaR.Backend.Domain.Sales.Offer", b =>
@@ -635,6 +1138,238 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_sellers_slug_not_empty", "char_length(slug) > 0");
                         });
+                });
+
+            modelBuilder.Entity("BazaR.Backend.Domain.Shipping.ShippingProfile", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<Guid>("SellerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("seller_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SellerId")
+                        .HasDatabaseName("ix_shipping_profiles_seller_id");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_shipping_profiles_status");
+
+                    b.ToTable("shipping_profiles", (string)null);
+                });
+
+            modelBuilder.Entity("BazaR.Backend.Domain.ShippingProfiles.ShippingMethodConfig", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("AllowCashOnDelivery")
+                        .HasColumnType("boolean")
+                        .HasColumnName("allow_cash_on_delivery");
+
+                    b.Property<decimal>("BaseFee")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("base_fee");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("currency");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("description");
+
+                    b.Property<int?>("EstimatedDaysMax")
+                        .HasColumnType("integer")
+                        .HasColumnName("estimated_days_max");
+
+                    b.Property<int?>("EstimatedDaysMin")
+                        .HasColumnType("integer")
+                        .HasColumnName("estimated_days_min");
+
+                    b.Property<decimal?>("FreeShippingFromAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("free_shipping_from_amount");
+
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_enabled");
+
+                    b.Property<string>("MethodType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("method_type");
+
+                    b.Property<bool>("RequiresCity")
+                        .HasColumnType("boolean")
+                        .HasColumnName("requires_city");
+
+                    b.Property<bool>("RequiresPickupPoint")
+                        .HasColumnType("boolean")
+                        .HasColumnName("requires_pickup_point");
+
+                    b.Property<bool>("RequiresStreetAddress")
+                        .HasColumnType("boolean")
+                        .HasColumnName("requires_street_address");
+
+                    b.Property<Guid>("ShippingProfileId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shipping_profile_id");
+
+                    b.Property<string>("Title")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("title");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MethodType")
+                        .HasDatabaseName("ix_shipping_profile_methods_method_type");
+
+                    b.HasIndex("ShippingProfileId")
+                        .HasDatabaseName("ix_shipping_profile_methods_profile_id");
+
+                    b.HasIndex("ShippingProfileId", "MethodType")
+                        .IsUnique()
+                        .HasDatabaseName("ux_shipping_profile_methods_profile_id_method_type");
+
+                    b.ToTable("shipping_profile_methods", (string)null);
+                });
+
+            modelBuilder.Entity("BazaR.Backend.Domain.Shippings.Shipping", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("CancelledAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("cancelled_at_utc");
+
+                    b.Property<string>("Carrier")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("carrier");
+
+                    b.Property<bool>("CashOnDeliveryAllowed")
+                        .HasColumnType("boolean")
+                        .HasColumnName("cash_on_delivery_allowed");
+
+                    b.Property<string>("Comment")
+                        .HasColumnType("text")
+                        .HasColumnName("comment");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<DateTimeOffset?>("DeliveredAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("delivered_at_utc");
+
+                    b.Property<string>("MethodType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("method_type");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("order_id");
+
+                    b.Property<DateTimeOffset?>("PreparingAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("preparing_at_utc");
+
+                    b.Property<DateTimeOffset?>("ReadyToShipAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ready_to_ship_at_utc");
+
+                    b.Property<DateTimeOffset?>("ReturnedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("returned_at_utc");
+
+                    b.Property<Guid>("SellerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("seller_id");
+
+                    b.Property<DateTimeOffset?>("ShippedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("shipped_at_utc");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("TrackingNumber")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("tracking_number");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAtUtc")
+                        .HasDatabaseName("ix_shippings_created_at_utc");
+
+                    b.HasIndex("DeliveredAtUtc")
+                        .HasDatabaseName("ix_shippings_delivered_at_utc");
+
+                    b.HasIndex("MethodType")
+                        .HasDatabaseName("ix_shippings_method_type");
+
+                    b.HasIndex("OrderId")
+                        .HasDatabaseName("ix_shippings_order_id");
+
+                    b.HasIndex("SellerId")
+                        .HasDatabaseName("ix_shippings_seller_id");
+
+                    b.HasIndex("ShippedAtUtc")
+                        .HasDatabaseName("ix_shippings_shipped_at_utc");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_shippings_status");
+
+                    b.HasIndex("TrackingNumber")
+                        .HasDatabaseName("ix_shippings_tracking_number");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_shippings_user_id");
+
+                    b.ToTable("shippings", (string)null);
                 });
 
             modelBuilder.Entity("BazaR.Backend.Domain.Users.User", b =>
@@ -920,6 +1655,364 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("BazaR.Backend.Domain.Checkouts.Checkout", b =>
+                {
+                    b.OwnsOne("BazaR.Backend.Domain.Common.Money", "GrandTotal", b1 =>
+                        {
+                            b1.Property<Guid>("CheckoutId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<decimal>("Amount")
+                                .HasPrecision(18, 2)
+                                .HasColumnType("numeric(18,2)")
+                                .HasColumnName("grand_total_value");
+
+                            b1.Property<string>("Currency")
+                                .IsRequired()
+                                .HasMaxLength(10)
+                                .HasColumnType("character varying(10)")
+                                .HasColumnName("grand_total_currency");
+
+                            b1.HasKey("CheckoutId");
+
+                            b1.ToTable("checkouts");
+
+                            b1.WithOwner()
+                                .HasForeignKey("CheckoutId");
+                        });
+
+                    b.OwnsOne("BazaR.Backend.Domain.Common.Money", "ItemsSubtotal", b1 =>
+                        {
+                            b1.Property<Guid>("CheckoutId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<decimal>("Amount")
+                                .HasPrecision(18, 2)
+                                .HasColumnType("numeric(18,2)")
+                                .HasColumnName("items_subtotal_value");
+
+                            b1.Property<string>("Currency")
+                                .IsRequired()
+                                .HasMaxLength(10)
+                                .HasColumnType("character varying(10)")
+                                .HasColumnName("items_subtotal_currency");
+
+                            b1.HasKey("CheckoutId");
+
+                            b1.ToTable("checkouts");
+
+                            b1.WithOwner()
+                                .HasForeignKey("CheckoutId");
+                        });
+
+                    b.OwnsOne("BazaR.Backend.Domain.Common.Money", "ShippingTotal", b1 =>
+                        {
+                            b1.Property<Guid>("CheckoutId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<decimal>("Amount")
+                                .HasPrecision(18, 2)
+                                .HasColumnType("numeric(18,2)")
+                                .HasColumnName("shipping_total_value");
+
+                            b1.Property<string>("Currency")
+                                .IsRequired()
+                                .HasMaxLength(10)
+                                .HasColumnType("character varying(10)")
+                                .HasColumnName("shipping_total_currency");
+
+                            b1.HasKey("CheckoutId");
+
+                            b1.ToTable("checkouts");
+
+                            b1.WithOwner()
+                                .HasForeignKey("CheckoutId");
+                        });
+
+                    b.OwnsMany("BazaR.Backend.Domain.Checkouts.CheckoutLine", "Lines", b1 =>
+                        {
+                            b1.Property<Guid>("CheckoutId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("checkout_id");
+
+                            b1.Property<Guid>("Id")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<Guid>("OfferId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("offer_id");
+
+                            b1.Property<Guid>("ProductId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("product_id");
+
+                            b1.Property<string>("ProductTitle")
+                                .IsRequired()
+                                .HasMaxLength(500)
+                                .HasColumnType("character varying(500)")
+                                .HasColumnName("product_title");
+
+                            b1.Property<int>("Quantity")
+                                .HasColumnType("integer")
+                                .HasColumnName("quantity");
+
+                            b1.Property<Guid>("SellerId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("seller_id");
+
+                            b1.Property<string>("Sku")
+                                .IsRequired()
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)")
+                                .HasColumnName("sku");
+
+                            b1.HasKey("CheckoutId", "Id");
+
+                            b1.HasIndex("CheckoutId")
+                                .HasDatabaseName("ix_checkout_lines_checkout_id");
+
+                            b1.HasIndex("OfferId")
+                                .HasDatabaseName("ix_checkout_lines_offer_id");
+
+                            b1.HasIndex("ProductId")
+                                .HasDatabaseName("ix_checkout_lines_product_id");
+
+                            b1.HasIndex("SellerId")
+                                .HasDatabaseName("ix_checkout_lines_seller_id");
+
+                            b1.ToTable("checkout_lines", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("CheckoutId");
+
+                            b1.OwnsOne("BazaR.Backend.Domain.Common.Money", "UnitPrice", b2 =>
+                                {
+                                    b2.Property<Guid>("CheckoutLineCheckoutId")
+                                        .HasColumnType("uuid");
+
+                                    b2.Property<Guid>("CheckoutLineId")
+                                        .HasColumnType("uuid");
+
+                                    b2.Property<decimal>("Amount")
+                                        .HasPrecision(18, 2)
+                                        .HasColumnType("numeric(18,2)")
+                                        .HasColumnName("unit_price_value");
+
+                                    b2.Property<string>("Currency")
+                                        .IsRequired()
+                                        .HasMaxLength(10)
+                                        .HasColumnType("character varying(10)")
+                                        .HasColumnName("unit_price_currency");
+
+                                    b2.HasKey("CheckoutLineCheckoutId", "CheckoutLineId");
+
+                                    b2.ToTable("checkout_lines");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("CheckoutLineCheckoutId", "CheckoutLineId");
+                                });
+
+                            b1.OwnsOne("BazaR.Backend.Domain.Checkouts.PaymentSelection", "Payment", b2 =>
+                                {
+                                    b2.Property<Guid>("CheckoutLineCheckoutId")
+                                        .HasColumnType("uuid");
+
+                                    b2.Property<Guid>("CheckoutLineId")
+                                        .HasColumnType("uuid");
+
+                                    b2.Property<string>("Method")
+                                        .IsRequired()
+                                        .HasMaxLength(50)
+                                        .HasColumnType("character varying(50)")
+                                        .HasColumnName("payment_method");
+
+                                    b2.Property<string>("Provider")
+                                        .HasMaxLength(100)
+                                        .HasColumnType("character varying(100)")
+                                        .HasColumnName("payment_provider");
+
+                                    b2.Property<bool>("RequiresOnlineAuthorization")
+                                        .HasColumnType("boolean")
+                                        .HasColumnName("payment_requires_online_authorization");
+
+                                    b2.HasKey("CheckoutLineCheckoutId", "CheckoutLineId");
+
+                                    b2.ToTable("checkout_lines");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("CheckoutLineCheckoutId", "CheckoutLineId");
+                                });
+
+                            b1.OwnsOne("BazaR.Backend.Domain.Checkouts.RecipientInfo", "Recipient", b2 =>
+                                {
+                                    b2.Property<Guid>("CheckoutLineCheckoutId")
+                                        .HasColumnType("uuid");
+
+                                    b2.Property<Guid>("CheckoutLineId")
+                                        .HasColumnType("uuid");
+
+                                    b2.Property<string>("Email")
+                                        .HasMaxLength(200)
+                                        .HasColumnType("character varying(200)")
+                                        .HasColumnName("recipient_email");
+
+                                    b2.Property<string>("FirstName")
+                                        .IsRequired()
+                                        .HasMaxLength(100)
+                                        .HasColumnType("character varying(100)")
+                                        .HasColumnName("recipient_first_name");
+
+                                    b2.Property<bool>("IsCustomerRecipient")
+                                        .HasColumnType("boolean")
+                                        .HasColumnName("recipient_is_customer_recipient");
+
+                                    b2.Property<string>("LastName")
+                                        .IsRequired()
+                                        .HasMaxLength(100)
+                                        .HasColumnType("character varying(100)")
+                                        .HasColumnName("recipient_last_name");
+
+                                    b2.Property<string>("Phone")
+                                        .IsRequired()
+                                        .HasMaxLength(50)
+                                        .HasColumnType("character varying(50)")
+                                        .HasColumnName("recipient_phone");
+
+                                    b2.HasKey("CheckoutLineCheckoutId", "CheckoutLineId");
+
+                                    b2.ToTable("checkout_lines");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("CheckoutLineCheckoutId", "CheckoutLineId");
+                                });
+
+                            b1.OwnsOne("BazaR.Backend.Domain.Checkouts.ShippingSelection", "Shipping", b2 =>
+                                {
+                                    b2.Property<Guid>("CheckoutLineCheckoutId")
+                                        .HasColumnType("uuid");
+
+                                    b2.Property<Guid>("CheckoutLineId")
+                                        .HasColumnType("uuid");
+
+                                    b2.Property<string>("Apartment")
+                                        .HasMaxLength(50)
+                                        .HasColumnType("character varying(50)")
+                                        .HasColumnName("shipping_apartment");
+
+                                    b2.Property<string>("City")
+                                        .IsRequired()
+                                        .HasMaxLength(100)
+                                        .HasColumnType("character varying(100)")
+                                        .HasColumnName("shipping_city");
+
+                                    b2.Property<string>("Comment")
+                                        .HasColumnType("text")
+                                        .HasColumnName("shipping_comment");
+
+                                    b2.Property<string>("Country")
+                                        .IsRequired()
+                                        .HasMaxLength(100)
+                                        .HasColumnType("character varying(100)")
+                                        .HasColumnName("shipping_country");
+
+                                    b2.Property<string>("House")
+                                        .HasMaxLength(50)
+                                        .HasColumnType("character varying(50)")
+                                        .HasColumnName("shipping_house");
+
+                                    b2.Property<string>("MethodType")
+                                        .IsRequired()
+                                        .HasMaxLength(50)
+                                        .HasColumnType("character varying(50)")
+                                        .HasColumnName("shipping_method_type");
+
+                                    b2.Property<string>("PickupPointCode")
+                                        .HasMaxLength(100)
+                                        .HasColumnType("character varying(100)")
+                                        .HasColumnName("shipping_pickup_point_code");
+
+                                    b2.Property<string>("PickupPointName")
+                                        .HasMaxLength(200)
+                                        .HasColumnType("character varying(200)")
+                                        .HasColumnName("shipping_pickup_point_name");
+
+                                    b2.Property<string>("PostalCode")
+                                        .HasMaxLength(50)
+                                        .HasColumnType("character varying(50)")
+                                        .HasColumnName("shipping_postal_code");
+
+                                    b2.Property<string>("Region")
+                                        .IsRequired()
+                                        .HasMaxLength(100)
+                                        .HasColumnType("character varying(100)")
+                                        .HasColumnName("shipping_region");
+
+                                    b2.Property<string>("Street")
+                                        .HasMaxLength(200)
+                                        .HasColumnType("character varying(200)")
+                                        .HasColumnName("shipping_street");
+
+                                    b2.HasKey("CheckoutLineCheckoutId", "CheckoutLineId");
+
+                                    b2.ToTable("checkout_lines");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("CheckoutLineCheckoutId", "CheckoutLineId");
+
+                                    b2.OwnsOne("BazaR.Backend.Domain.Common.Money", "Cost", b3 =>
+                                        {
+                                            b3.Property<Guid>("ShippingSelectionCheckoutLineCheckoutId")
+                                                .HasColumnType("uuid");
+
+                                            b3.Property<Guid>("ShippingSelectionCheckoutLineId")
+                                                .HasColumnType("uuid");
+
+                                            b3.Property<decimal>("Amount")
+                                                .HasPrecision(18, 2)
+                                                .HasColumnType("numeric(18,2)")
+                                                .HasColumnName("shipping_cost_value");
+
+                                            b3.Property<string>("Currency")
+                                                .IsRequired()
+                                                .HasMaxLength(10)
+                                                .HasColumnType("character varying(10)")
+                                                .HasColumnName("shipping_cost_currency");
+
+                                            b3.HasKey("ShippingSelectionCheckoutLineCheckoutId", "ShippingSelectionCheckoutLineId");
+
+                                            b3.ToTable("checkout_lines");
+
+                                            b3.WithOwner()
+                                                .HasForeignKey("ShippingSelectionCheckoutLineCheckoutId", "ShippingSelectionCheckoutLineId");
+                                        });
+
+                                    b2.Navigation("Cost")
+                                        .IsRequired();
+                                });
+
+                            b1.Navigation("Payment");
+
+                            b1.Navigation("Recipient");
+
+                            b1.Navigation("Shipping");
+
+                            b1.Navigation("UnitPrice")
+                                .IsRequired();
+                        });
+
+                    b.Navigation("GrandTotal")
+                        .IsRequired();
+
+                    b.Navigation("ItemsSubtotal")
+                        .IsRequired();
+
+                    b.Navigation("Lines");
+
+                    b.Navigation("ShippingTotal")
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("BazaR.Backend.Domain.Identity.AuthUser", b =>
                 {
                     b.OwnsOne("BazaR.Backend.Domain.Identity.IdentityEmail", "Email", b1 =>
@@ -994,33 +2087,33 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("BazaR.Backend.Domain.Orders.Order", b =>
                 {
-                    b.OwnsOne("BazaR.Backend.Domain.Orders.Address", "DeliveryAddress", b1 =>
+                    b.OwnsOne("BazaR.Backend.Domain.Orders.OrderCustomer", "Customer", b1 =>
                         {
                             b1.Property<Guid>("OrderId")
                                 .HasColumnType("uuid");
 
-                            b1.Property<string>("Apartment")
-                                .HasMaxLength(50)
-                                .HasColumnType("character varying(50)")
-                                .HasColumnName("apartment");
-
-                            b1.Property<string>("City")
-                                .IsRequired()
-                                .HasMaxLength(100)
-                                .HasColumnType("character varying(100)")
-                                .HasColumnName("city");
-
-                            b1.Property<string>("Country")
-                                .IsRequired()
-                                .HasMaxLength(100)
-                                .HasColumnType("character varying(100)")
-                                .HasColumnName("country");
-
-                            b1.Property<string>("Street")
+                            b1.Property<string>("Email")
                                 .IsRequired()
                                 .HasMaxLength(200)
                                 .HasColumnType("character varying(200)")
-                                .HasColumnName("street");
+                                .HasColumnName("customer_email");
+
+                            b1.Property<string>("FirstName")
+                                .IsRequired()
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)")
+                                .HasColumnName("customer_first_name");
+
+                            b1.Property<string>("LastName")
+                                .IsRequired()
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)")
+                                .HasColumnName("customer_last_name");
+
+                            b1.Property<string>("Phone")
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)")
+                                .HasColumnName("customer_phone");
 
                             b1.HasKey("OrderId");
 
@@ -1030,64 +2123,266 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
                                 .HasForeignKey("OrderId");
                         });
 
-                    b.OwnsMany("BazaR.Backend.Domain.Orders.OrderItem", "_items", b1 =>
+                    b.OwnsOne("BazaR.Backend.Domain.Orders.OrderDelivery", "Delivery", b1 =>
                         {
-                            b1.Property<Guid>("Id")
-                                .ValueGeneratedOnAdd()
-                                .HasColumnType("uuid")
-                                .HasColumnName("id");
-
-                            b1.Property<Guid>("ProductId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("product_id");
-
-                            b1.Property<int>("Quantity")
-                                .HasColumnType("integer")
-                                .HasColumnName("quantity");
-
-                            b1.Property<Guid>("order_id")
+                            b1.Property<Guid>("OrderId")
                                 .HasColumnType("uuid");
 
-                            b1.HasKey("Id");
+                            b1.Property<string>("Apartment")
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)")
+                                .HasColumnName("delivery_apartment");
 
-                            b1.HasIndex("order_id", "ProductId");
+                            b1.Property<string>("Building")
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)")
+                                .HasColumnName("delivery_building");
 
-                            b1.ToTable("order_items", (string)null);
+                            b1.Property<string>("City")
+                                .IsRequired()
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)")
+                                .HasColumnName("delivery_city");
+
+                            b1.Property<string>("Method")
+                                .IsRequired()
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)")
+                                .HasColumnName("delivery_method");
+
+                            b1.Property<string>("PostalCode")
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)")
+                                .HasColumnName("delivery_postal_code");
+
+                            b1.Property<string>("Region")
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)")
+                                .HasColumnName("delivery_region");
+
+                            b1.Property<string>("Street")
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("delivery_street");
+
+                            b1.Property<string>("Warehouse")
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("delivery_warehouse");
+
+                            b1.HasKey("OrderId");
+
+                            b1.ToTable("orders");
 
                             b1.WithOwner()
-                                .HasForeignKey("order_id");
-
-                            b1.OwnsOne("BazaR.Backend.Domain.Common.Money", "PriceSnapshot", b2 =>
-                                {
-                                    b2.Property<Guid>("OrderItemId")
-                                        .HasColumnType("uuid");
-
-                                    b2.Property<decimal>("Amount")
-                                        .HasColumnType("numeric")
-                                        .HasColumnName("price_amount");
-
-                                    b2.Property<string>("Currency")
-                                        .IsRequired()
-                                        .HasMaxLength(3)
-                                        .HasColumnType("character varying(3)")
-                                        .HasColumnName("price_currency");
-
-                                    b2.HasKey("OrderItemId");
-
-                                    b2.ToTable("order_items");
-
-                                    b2.WithOwner()
-                                        .HasForeignKey("OrderItemId");
-                                });
-
-                            b1.Navigation("PriceSnapshot")
-                                .IsRequired();
+                                .HasForeignKey("OrderId");
                         });
 
-                    b.Navigation("DeliveryAddress")
+                    b.Navigation("Customer")
                         .IsRequired();
 
-                    b.Navigation("_items");
+                    b.Navigation("Delivery")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("BazaR.Backend.Domain.Orders.OrderItem", b =>
+                {
+                    b.HasOne("BazaR.Backend.Domain.Orders.Order", null)
+                        .WithMany("Items")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.OwnsOne("BazaR.Backend.Domain.Common.Money", "PriceSnapshot", b1 =>
+                        {
+                            b1.Property<long>("OrderItemId")
+                                .HasColumnType("bigint");
+
+                            b1.Property<decimal>("Amount")
+                                .HasPrecision(18, 2)
+                                .HasColumnType("numeric(18,2)")
+                                .HasColumnName("price_snapshot_value");
+
+                            b1.Property<string>("Currency")
+                                .IsRequired()
+                                .HasMaxLength(10)
+                                .HasColumnType("character varying(10)")
+                                .HasColumnName("price_snapshot_currency");
+
+                            b1.HasKey("OrderItemId");
+
+                            b1.ToTable("order_items");
+
+                            b1.WithOwner()
+                                .HasForeignKey("OrderItemId");
+                        });
+
+                    b.Navigation("PriceSnapshot")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("BazaR.Backend.Domain.PaymentProfiles.PaymentMethodConfig", b =>
+                {
+                    b.HasOne("BazaR.Backend.Domain.PaymentProfiles.PaymentProfile", null)
+                        .WithMany("Methods")
+                        .HasForeignKey("PaymentProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("BazaR.Backend.Domain.PaymentProfiles.PaymentProfile", b =>
+                {
+                    b.OwnsOne("BazaR.Backend.Domain.PaymentProfiles.BankAccount", "BankAccount", b1 =>
+                        {
+                            b1.Property<Guid>("PaymentProfileId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("BankName")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("bank_name");
+
+                            b1.Property<string>("Iban")
+                                .IsRequired()
+                                .HasMaxLength(64)
+                                .HasColumnType("character varying(64)")
+                                .HasColumnName("bank_iban");
+
+                            b1.Property<string>("PurposeTemplate")
+                                .HasColumnType("text")
+                                .HasColumnName("bank_purpose_template");
+
+                            b1.Property<string>("RecipientName")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("bank_recipient_name");
+
+                            b1.Property<string>("Swift")
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)")
+                                .HasColumnName("bank_swift");
+
+                            b1.Property<string>("TaxNumber")
+                                .IsRequired()
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)")
+                                .HasColumnName("bank_tax_number");
+
+                            b1.HasKey("PaymentProfileId");
+
+                            b1.ToTable("payment_profiles");
+
+                            b1.WithOwner()
+                                .HasForeignKey("PaymentProfileId");
+                        });
+
+                    b.OwnsOne("BazaR.Backend.Domain.PaymentProfiles.LiqPaySettings", "LiqPaySettings", b1 =>
+                        {
+                            b1.Property<Guid>("PaymentProfileId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<bool>("CheckoutEnabled")
+                                .HasColumnType("boolean")
+                                .HasColumnName("liqpay_checkout_enabled");
+
+                            b1.Property<bool>("InstallmentsEnabled")
+                                .HasColumnType("boolean")
+                                .HasColumnName("liqpay_installments_enabled");
+
+                            b1.Property<bool>("PrivatPayEnabled")
+                                .HasColumnType("boolean")
+                                .HasColumnName("liqpay_privatpay_enabled");
+
+                            b1.Property<string>("PrivateKey")
+                                .IsRequired()
+                                .HasMaxLength(500)
+                                .HasColumnType("character varying(500)")
+                                .HasColumnName("liqpay_private_key");
+
+                            b1.Property<string>("PublicKey")
+                                .IsRequired()
+                                .HasMaxLength(500)
+                                .HasColumnType("character varying(500)")
+                                .HasColumnName("liqpay_public_key");
+
+                            b1.Property<string>("ResultUrl")
+                                .HasColumnType("text")
+                                .HasColumnName("liqpay_result_url");
+
+                            b1.Property<string>("ServerCallbackUrl")
+                                .HasColumnType("text")
+                                .HasColumnName("liqpay_server_callback_url");
+
+                            b1.HasKey("PaymentProfileId");
+
+                            b1.ToTable("payment_profiles");
+
+                            b1.WithOwner()
+                                .HasForeignKey("PaymentProfileId");
+                        });
+
+                    b.Navigation("BankAccount");
+
+                    b.Navigation("LiqPaySettings");
+                });
+
+            modelBuilder.Entity("BazaR.Backend.Domain.Payments.Payment", b =>
+                {
+                    b.OwnsOne("BazaR.Backend.Domain.Common.Money", "Amount", b1 =>
+                        {
+                            b1.Property<Guid>("PaymentId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<decimal>("Amount")
+                                .HasPrecision(18, 2)
+                                .HasColumnType("numeric(18,2)")
+                                .HasColumnName("amount_value");
+
+                            b1.Property<string>("Currency")
+                                .IsRequired()
+                                .HasMaxLength(10)
+                                .HasColumnType("character varying(10)")
+                                .HasColumnName("amount_currency");
+
+                            b1.HasKey("PaymentId");
+
+                            b1.ToTable("payments");
+
+                            b1.WithOwner()
+                                .HasForeignKey("PaymentId");
+                        });
+
+                    b.OwnsOne("BazaR.Backend.Domain.Common.Money", "RefundedAmount", b1 =>
+                        {
+                            b1.Property<Guid>("PaymentId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<decimal>("Amount")
+                                .HasPrecision(18, 2)
+                                .HasColumnType("numeric(18,2)")
+                                .HasColumnName("refunded_amount_value");
+
+                            b1.Property<string>("Currency")
+                                .IsRequired()
+                                .HasMaxLength(10)
+                                .HasColumnType("character varying(10)")
+                                .HasColumnName("refunded_amount_currency");
+
+                            b1.HasKey("PaymentId");
+
+                            b1.ToTable("payments");
+
+                            b1.WithOwner()
+                                .HasForeignKey("PaymentId");
+                        });
+
+                    b.Navigation("Amount")
+                        .IsRequired();
+
+                    b.Navigation("RefundedAmount")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("BazaR.Backend.Domain.Sales.Offer", b =>
@@ -1239,6 +2534,148 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
                     b.Navigation("SupportPhone");
                 });
 
+            modelBuilder.Entity("BazaR.Backend.Domain.ShippingProfiles.ShippingMethodConfig", b =>
+                {
+                    b.HasOne("BazaR.Backend.Domain.Shipping.ShippingProfile", null)
+                        .WithMany("Methods")
+                        .HasForeignKey("ShippingProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("BazaR.Backend.Domain.Shippings.Shipping", b =>
+                {
+                    b.OwnsOne("BazaR.Backend.Domain.Common.Money", "Cost", b1 =>
+                        {
+                            b1.Property<Guid>("ShippingId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<decimal>("Amount")
+                                .HasPrecision(18, 2)
+                                .HasColumnType("numeric(18,2)")
+                                .HasColumnName("cost_amount_value");
+
+                            b1.Property<string>("Currency")
+                                .IsRequired()
+                                .HasMaxLength(10)
+                                .HasColumnType("character varying(10)")
+                                .HasColumnName("cost_amount_currency");
+
+                            b1.HasKey("ShippingId");
+
+                            b1.ToTable("shippings");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ShippingId");
+                        });
+
+                    b.OwnsOne("BazaR.Backend.Domain.Shippings.ShippingDestination", "Destination", b1 =>
+                        {
+                            b1.Property<Guid>("ShippingId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("Apartment")
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)")
+                                .HasColumnName("destination_apartment");
+
+                            b1.Property<string>("City")
+                                .IsRequired()
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)")
+                                .HasColumnName("destination_city");
+
+                            b1.Property<string>("Country")
+                                .IsRequired()
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)")
+                                .HasColumnName("destination_country");
+
+                            b1.Property<string>("House")
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)")
+                                .HasColumnName("destination_house");
+
+                            b1.Property<string>("PickupPointCode")
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)")
+                                .HasColumnName("destination_pickup_point_code");
+
+                            b1.Property<string>("PickupPointName")
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("destination_pickup_point_name");
+
+                            b1.Property<string>("PostalCode")
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)")
+                                .HasColumnName("destination_postal_code");
+
+                            b1.Property<string>("Region")
+                                .IsRequired()
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)")
+                                .HasColumnName("destination_region");
+
+                            b1.Property<string>("Street")
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("destination_street");
+
+                            b1.HasKey("ShippingId");
+
+                            b1.ToTable("shippings");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ShippingId");
+                        });
+
+                    b.OwnsOne("BazaR.Backend.Domain.Shippings.ShippingRecipient", "Recipient", b1 =>
+                        {
+                            b1.Property<Guid>("ShippingId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("Email")
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("recipient_email");
+
+                            b1.Property<string>("FirstName")
+                                .IsRequired()
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)")
+                                .HasColumnName("recipient_first_name");
+
+                            b1.Property<string>("LastName")
+                                .IsRequired()
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)")
+                                .HasColumnName("recipient_last_name");
+
+                            b1.Property<string>("Phone")
+                                .IsRequired()
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)")
+                                .HasColumnName("recipient_phone");
+
+                            b1.HasKey("ShippingId");
+
+                            b1.ToTable("shippings");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ShippingId");
+                        });
+
+                    b.Navigation("Cost")
+                        .IsRequired();
+
+                    b.Navigation("Destination")
+                        .IsRequired();
+
+                    b.Navigation("Recipient")
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("BazaR.Backend.Domain.Users.User", b =>
                 {
                     b.OwnsOne("BazaR.Backend.Domain.Users.FullName", "Name", b1 =>
@@ -1383,6 +2820,21 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("BazaR.Backend.Domain.Categories.Category", b =>
                 {
                     b.Navigation("Attributes");
+                });
+
+            modelBuilder.Entity("BazaR.Backend.Domain.Orders.Order", b =>
+                {
+                    b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("BazaR.Backend.Domain.PaymentProfiles.PaymentProfile", b =>
+                {
+                    b.Navigation("Methods");
+                });
+
+            modelBuilder.Entity("BazaR.Backend.Domain.Shipping.ShippingProfile", b =>
+                {
+                    b.Navigation("Methods");
                 });
 
             modelBuilder.Entity("BazaR.Backend.Domain.Users.User", b =>

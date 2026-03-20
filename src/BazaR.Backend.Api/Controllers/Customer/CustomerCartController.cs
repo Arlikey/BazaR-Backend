@@ -1,5 +1,7 @@
 ﻿using BazaR.Backend.Api.Contracts.Carts;
+using BazaR.Backend.Api.Contracts.Customer.Carts;
 using BazaR.Backend.Application.Carts.Commands.AddItem;
+using BazaR.Backend.Application.Carts.Commands.Checkout;
 using BazaR.Backend.Application.Carts.Commands.Clear;
 using BazaR.Backend.Application.Carts.Commands.RemoveItem;
 using BazaR.Backend.Application.Carts.Commands.UpdateItemQuantity;
@@ -21,6 +23,25 @@ public sealed class CustomerCartController : ControllerBase
     {
         _mediator = mediator;
     }
+
+/*
+    [HttpPost("checkout")]
+    public async Task<IActionResult> Checkout(
+        [FromBody] CheckoutCartRequest request,
+        CancellationToken ct)
+    {
+        var command = new CheckoutCartCommand(
+            request.DeliveryAddress,
+            request.CustomerComment);
+
+        var result = await _mediator.Send(command, ct);
+
+        if (result.IsFailure)
+            return BadRequest(result.Error);
+
+        return Ok(new CheckoutCartResponse(result.Value));
+    }*/
+
 
     [HttpGet]
     public async Task<IActionResult> GetMyActiveCart(CancellationToken ct)

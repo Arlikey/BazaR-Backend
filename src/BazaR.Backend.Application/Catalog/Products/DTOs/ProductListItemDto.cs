@@ -34,6 +34,16 @@ public sealed record ProductCardWithOfferDto(
     OfferCardDto? Offer
 );
 
+/*public sealed record ProductCardWithOfferDto(
+    Guid Id,
+    string Name,
+    string? Slug,
+    string? Description,
+    string? MainImageUrl,
+    OfferCardDto? Offer,
+    bool IsFavorite
+);*/
+
 public sealed record ProductDetailsDto(
     Guid Id,
     string Name,

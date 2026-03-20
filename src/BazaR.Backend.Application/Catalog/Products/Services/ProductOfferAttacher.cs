@@ -2,16 +2,20 @@
 using BazaR.Backend.Application.Abstractions.Services;
 using BazaR.Backend.Application.Catalog.Offers.DTOs;
 using BazaR.Backend.Application.Catalog.Products.DTOs;
+using BazaR.Backend.Application.Common.Abstractions;
+using BazaR.Backend.Domain.Users;
 
 namespace BazaR.Backend.Application.Catalog.Products.Services;
 
 public sealed class ProductOfferAttacher : IProductOfferAttacher
 {
     private readonly IOfferReadRepository _offers;
+    private readonly ICurrentUser _currentUser;
 
-    public ProductOfferAttacher(IOfferReadRepository offers)
+    public ProductOfferAttacher(IOfferReadRepository offers, ICurrentUser currentUser)
     {
         _offers = offers;
+        _currentUser = currentUser;
     }
 
     public async Task<IReadOnlyList<ProductCardWithOfferDto>> AttachOffersAsync(
@@ -23,10 +27,12 @@ public sealed class ProductOfferAttacher : IProductOfferAttacher
 
         var productIds = products.Select(p => p.Id).ToArray();
 
-       
-        var offers = await _offers.GetByProductCardIdsAsync(productIds, ct);
+        UserId? userId = _currentUser.IsAuthenticated
+            ? new UserId(_currentUser.UserId)
+            : null;
 
-     
+        var offers = await _offers.GetByProductCardIdsAsync(productIds, userId, ct);
+
         var offerMap = offers.ToDictionary(o => o.ProductId);
 
         return products
@@ -36,8 +42,20 @@ public sealed class ProductOfferAttacher : IProductOfferAttacher
                 Slug: p.Slug,
                 Description: p.Description,
                 MainImageUrl: p.MainImageUrl,
-                Offer: offerMap.TryGetValue(p.Id, out var offer) ? offer : null
+                Offer: offerMap.TryGetValue(p.Id, out var offer)
+                    ? MapOffer(offer)
+                    : null
             ))
             .ToList();
     }
+
+    private static OfferCardDto MapOffer(OfferCardReadDto offer)
+        => new(
+            Id: offer.OfferId,
+            PriceAmount: offer.PriceAmount,
+            PriceCurrency: offer.PriceCurrency,
+            OldPriceAmount: offer.OldPriceAmount,
+            StockQuantity: offer.StockQuantity,
+            IsFavorite: offer.IsFavorite
+        );
 }

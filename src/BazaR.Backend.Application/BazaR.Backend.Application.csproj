@@ -7,13 +7,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Folder Include="Payments\Services\" />
     <Folder Include="Sellers\Queries\GetById\" />
     <Folder Include="Sellers\Queries\GetBySlug\" />
+    <Folder Include="Shippings\DTOs\" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="FluentValidation" Version="12.1.1" />
     <PackageReference Include="MediatR" Version="14.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
   </ItemGroup>
 
   <ItemGroup>

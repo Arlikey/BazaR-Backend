@@ -130,9 +130,9 @@ builder.Services
 
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("AdminOnly", p => p.RequireRole("Admin"));
-    options.AddPolicy("SellerOnly", p => p.RequireRole("Seller", "Admin"));
-    options.AddPolicy("CustomerOnly", p => p.RequireRole("Customer", "Seller", "Admin"));
+    options.AddPolicy("Admin", p => p.RequireRole("Admin"));
+    options.AddPolicy("Seller", p => p.RequireRole("Seller", "Admin"));
+    options.AddPolicy("Customer", p => p.RequireRole("Customer", "Seller", "Admin"));
 });
 
 

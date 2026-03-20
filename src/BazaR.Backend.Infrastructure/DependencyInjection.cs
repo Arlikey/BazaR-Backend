@@ -5,19 +5,25 @@ using BazaR.Backend.Application.Abstractions.Repositories;
 using BazaR.Backend.Application.Abstractions.Repositories.ReadModels;
 using BazaR.Backend.Application.Abstractions.Services;
 using BazaR.Backend.Application.Catalog.Products.Services;
+using BazaR.Backend.Application.Checkouts;
+using BazaR.Backend.Application.Checkouts.Services;
 using BazaR.Backend.Application.Common.Abstractions;
 using BazaR.Backend.Application.Common.Abstractions.Security;
 using BazaR.Backend.Domain.Repositories;
 using BazaR.Backend.Infrastructure.Auth;
+using BazaR.Backend.Infrastructure.Payments;
 using BazaR.Backend.Infrastructure.Persistence;
 using BazaR.Backend.Infrastructure.Persistence.Files;
 using BazaR.Backend.Infrastructure.Persistence.ReadModels;
 //using BazaR.Backend.Infrastructure.Persistence.Queries;
 using BazaR.Backend.Infrastructure.Persistence.Repositories;
+using BazaR.Backend.Infrastructure.Persistence.Services;
+using BazaR.Backend.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace BazaR.Backend.Infrastructure;
 
@@ -52,6 +58,15 @@ public static class DependencyInjection
         });
 
 
+        services.AddOptions<LiqPayOptions>()
+            .Bind(configuration.GetSection(LiqPayOptions.SectionName));
+
+        // Регистрация HttpClient для платежного шлюза
+        //services.AddHttpClient<IPaymentGateway, LiqPayPaymentGateway>();
+
+
+
+
         services.AddScoped<IJwtProvider, JwtProvider>();
         services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
         services.AddScoped<IAuthUserRepository, AuthUserRepository>();
@@ -77,6 +92,25 @@ public static class DependencyInjection
         services.AddScoped<IProductOfferAttacher, ProductOfferAttacher>();
         services.AddScoped<IProductImageStorage, ProductImageStorage>();
         services.AddScoped<IFileStorage, LocalFileStorage>();
+
+        services.AddScoped<IFavoriteRepository, FavoriteRepository>();
+
+        services.AddScoped<IShippingRepository, ShippingRepository>();
+        services.AddScoped<ICheckoutRepository, CheckoutRepository>();
+        services.AddScoped<IShippingProfileRepository, ShippingProfileRepository>();
+        services.AddScoped<IShippingSelectionFactory, ShippingSelectionFactory>();
+        services.AddScoped<ICheckoutSubmissionService, CheckoutSubmissionService>();
+        services.AddScoped<IOrderFactory, OrderFactory>();
+        services.AddScoped<IPaymentRepository, PaymentRepository>();
+        services.AddScoped<IOrderRepository, OrderRepository>();
+        services.AddScoped<IPaymentProfileRepository, PaymentProfileRepository>();
+
+        services.AddScoped<ICheckoutSnapshotBuilder, CheckoutSnapshotBuilder>();
+        services.AddScoped<IOfferSnapshotReader, OfferSnapshotReader>();
+
+        services.AddScoped<IPaymentRepository, PaymentRepository>();
+        services.AddScoped<ILiqPayCheckoutService, LiqPayCheckoutService>();
+
         return services;
     }
 }

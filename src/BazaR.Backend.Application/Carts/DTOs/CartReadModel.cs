@@ -43,7 +43,7 @@ public record CustomerCartItemDto(
 
 public record CustomerCartDto(
     Guid Id,
-    string Status,
+    string Status, 
     string Currency,
     int ItemsCount,
     int TotalQuantity,

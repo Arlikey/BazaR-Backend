@@ -11,10 +11,10 @@ public sealed class OrderRepository : IOrderRepository
 
     public OrderRepository(AppDbContext db) => _db = db;
 
-    public Task<Order?> GetById(OrderId id)
-        => _db.Orders
-            .Include("_items")
-            .FirstOrDefaultAsync(x => x.Id == id);
+    public Task<Order?> GetByIdAsync(OrderId id, CancellationToken cancellationToken = default)
+     => _db.Orders
+         .Include("_items")
+         .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
     public Task Add(Order order)
     {
