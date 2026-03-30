@@ -68,7 +68,6 @@ public sealed class CustomerCheckoutsController : ControllerBase
         return NoContent();
     }
 
-
     [HttpPut("{checkoutId:guid}/lines/{lineId:guid}/shipping")]
     public async Task<IActionResult> SetLineShipping(
         Guid checkoutId,
@@ -106,10 +105,10 @@ public sealed class CustomerCheckoutsController : ControllerBase
 
     [HttpPut("{checkoutId:guid}/lines/{lineId:guid}/payment")]
     public async Task<IActionResult> SetLinePayment(
-    Guid checkoutId,
-    Guid lineId,
-    [FromBody] SetCheckoutLinePaymentRequest request,
-    CancellationToken ct)
+        Guid checkoutId,
+        Guid lineId,
+        [FromBody] SetCheckoutLinePaymentRequest request,
+        CancellationToken ct)
     {
         var command = new SetCheckoutLinePaymentCommand(
             checkoutId,
@@ -131,8 +130,6 @@ public sealed class CustomerCheckoutsController : ControllerBase
         return NoContent();
     }
 
-
-    // Новый эндпоинт для подтверждения оформления заказа
     [HttpPost("{checkoutId:guid}/submit")]
     public async Task<IActionResult> Submit(Guid checkoutId, CancellationToken ct)
     {

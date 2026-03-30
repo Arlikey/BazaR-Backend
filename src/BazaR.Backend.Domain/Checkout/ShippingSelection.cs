@@ -43,8 +43,10 @@ public sealed class ShippingSelection
     public string? House { get; private set; }
     public string? Apartment { get; private set; }
     public string? PostalCode { get; private set; }
+
     public string? PickupPointCode { get; private set; }
     public string? PickupPointName { get; private set; }
+
     public string? Comment { get; private set; }
     public Money Cost { get; private set; } = default!;
 
@@ -89,16 +91,20 @@ public sealed class ShippingSelection
         var needsPickupPoint = methodType is
             ShippingMethodType.NovaPoshtaWarehouse or
             ShippingMethodType.NovaPoshtaLocker or
-            ShippingMethodType.UkrPoshtaBranch;
+            ShippingMethodType.UkrPoshtaBranch or
+            ShippingMethodType.BazaRPickup;
 
         var needsStreetAddress = methodType is
             ShippingMethodType.NovaPoshtaCourier or
-            ShippingMethodType.UkrPoshtaCourier;
+            ShippingMethodType.UkrPoshtaCourier or
+            ShippingMethodType.BazaRCourier;
 
         if (needsPickupPoint && string.IsNullOrWhiteSpace(pickupPointCode))
         {
             return Result<ShippingSelection>.Failure(
-                new Error("Checkout.Shipping.PickupPoint.Required", "Pickup point is required for selected shipping method."));
+                new Error(
+                    "Checkout.Shipping.PickupPoint.Required",
+                    "Pickup point is required for selected shipping method."));
         }
 
         if (needsStreetAddress)
@@ -121,13 +127,16 @@ public sealed class ShippingSelection
             country.Trim(),
             (region ?? string.Empty).Trim(),
             city.Trim(),
-            string.IsNullOrWhiteSpace(street) ? null : street.Trim(),
-            string.IsNullOrWhiteSpace(house) ? null : house.Trim(),
-            string.IsNullOrWhiteSpace(apartment) ? null : apartment.Trim(),
-            string.IsNullOrWhiteSpace(postalCode) ? null : postalCode.Trim(),
-            string.IsNullOrWhiteSpace(pickupPointCode) ? null : pickupPointCode.Trim(),
-            string.IsNullOrWhiteSpace(pickupPointName) ? null : pickupPointName.Trim(),
-            string.IsNullOrWhiteSpace(comment) ? null : comment.Trim(),
+            Normalize(street),
+            Normalize(house),
+            Normalize(apartment),
+            Normalize(postalCode),
+            Normalize(pickupPointCode),
+            Normalize(pickupPointName),
+            Normalize(comment),
             cost));
     }
+
+    private static string? Normalize(string? value)
+        => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }

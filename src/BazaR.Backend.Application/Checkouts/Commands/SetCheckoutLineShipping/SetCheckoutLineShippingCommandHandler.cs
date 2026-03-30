@@ -34,26 +34,50 @@ public sealed class SetCheckoutLineShippingCommandHandler
     public async Task<Result> Handle(SetCheckoutLineShippingCommand request, CancellationToken ct)
     {
         if (!_current.IsAuthenticated)
-            return Result.Failure(new Error("Auth.Required", "Authentication required."));
+        {
+            return Result.Failure(new Error(
+                "Auth.Required",
+                "Authentication required."));
+        }
 
         var checkout = await _checkouts.GetByIdAsync(new CheckoutId(request.CheckoutId), ct);
         if (checkout is null)
-            return Result.Failure(new Error("Checkout.NotFound", "Checkout was not found."));
+        {
+            return Result.Failure(new Error(
+                "Checkout.NotFound",
+                "Checkout was not found."));
+        }
 
         if (checkout.UserId.Value != _current.UserId)
-            return Result.Failure(new Error("Checkout.Forbidden", "You do not own this checkout."));
+        {
+            return Result.Failure(new Error(
+                "Checkout.Forbidden",
+                "You do not own this checkout."));
+        }
 
         var lineId = new CheckoutLineId(request.LineId);
         var line = checkout.Lines.FirstOrDefault(x => x.Id == lineId);
         if (line is null)
-            return Result.Failure(new Error("Checkout.Line.NotFound", "Checkout line was not found."));
+        {
+            return Result.Failure(new Error(
+                "Checkout.Line.NotFound",
+                "Checkout line was not found."));
+        }
 
         if (line.Recipient is null)
-            return Result.Failure(new Error("Checkout.Line.Recipient.Required", "Recipient must be set before shipping."));
+        {
+            return Result.Failure(new Error(
+                "Checkout.Line.Recipient.Required",
+                "Recipient must be set before shipping."));
+        }
 
         var profile = await _shippingProfiles.GetActiveBySellerIdAsync(line.SellerId, ct);
         if (profile is null)
-            return Result.Failure(new Error("ShippingProfile.NotFound", "Active shipping profile for seller was not found."));
+        {
+            return Result.Failure(new Error(
+                "ShippingProfile.NotFound",
+                "Active shipping profile for seller was not found."));
+        }
 
         var selectionResult = _shippingSelectionFactory.Create(
             profile,

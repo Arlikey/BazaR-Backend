@@ -1,13 +1,12 @@
 ﻿using BazaR.Backend.Application.Abstractions.Repositories;
 using BazaR.Backend.Application.Abstractions.Services;
 using BazaR.Backend.Application.Checkouts.DTOs;
-
 using BazaR.Backend.Domain.Checkouts;
 using BazaR.Backend.Domain.Common;
 using BazaR.Backend.Domain.Orders;
 using BazaR.Backend.Domain.Payments;
 using BazaR.Backend.Domain.Repositories;
-using BazaR.Backend.Domain.Shipping;
+using BazaR.Backend.Domain.ShippingProfiles;
 using BazaR.Backend.Domain.Shippings;
 
 namespace BazaR.Backend.Application.Checkouts.Services;
@@ -37,12 +36,16 @@ public sealed class CheckoutSubmissionService : ICheckoutSubmissionService
         CancellationToken ct)
     {
         if (checkout is null)
+        {
             return Result<CheckoutSubmissionResult>.Failure(
                 new Error("Checkout.Required", "Checkout is required."));
+        }
 
         if (!checkout.CanSubmit())
+        {
             return Result<CheckoutSubmissionResult>.Failure(
                 new Error("Checkout.NotReady", "Checkout is not ready for submission."));
+        }
 
         var orderIds = new List<Guid>();
         var shippingIds = new List<Guid>();
@@ -91,7 +94,7 @@ public sealed class CheckoutSubmissionService : ICheckoutSubmissionService
                 return Result<CheckoutSubmissionResult>.Failure(shippingResult.Error);
 
             var shipping = shippingResult.Value!;
-            _shippings.Add(shipping);
+            _shippings.AddAsync(shipping);
             shippingIds.Add(shipping.Id.Value);
 
             var paymentResult = CreatePaymentFromLine(
@@ -119,11 +122,33 @@ public sealed class CheckoutSubmissionService : ICheckoutSubmissionService
         return Result<CheckoutSubmissionResult>.Success(result);
     }
 
+
+    private static ShippingMethod MapShippingMethod(ShippingMethodType methodType)
+    {
+        return methodType switch
+        {
+            ShippingMethodType.NovaPoshtaWarehouse => ShippingMethod.NovaPoshta,
+            ShippingMethodType.NovaPoshtaLocker => ShippingMethod.NovaPoshta,
+            ShippingMethodType.NovaPoshtaCourier => ShippingMethod.NovaPoshta,
+            ShippingMethodType.BazaRCourier => ShippingMethod.BazaR,
+            ShippingMethodType.BazaRPickup => ShippingMethod.BazaR,
+            _ => ShippingMethod.Unknown
+        };
+    }
+
+    private static ShippingSettlementMode ResolveSettlementMode(CheckoutLine line)
+    {
+        return line.Payment?.Method == PaymentMethod.CashOnDelivery
+            ? ShippingSettlementMode.CashOnDelivery
+            : ShippingSettlementMode.Prepaid;
+    }
+
+
     private static Result<Shipping> CreateShippingFromLine(
-        Checkout checkout,
-        CheckoutLine line,
-        OrderId orderId,
-        DateTimeOffset nowUtc)
+    Checkout checkout,
+    CheckoutLine line,
+    OrderId orderId,
+    DateTimeOffset nowUtc)
     {
         var recipientResult = ShippingRecipient.Create(
             line.Recipient!.FirstName,
@@ -145,26 +170,22 @@ public sealed class CheckoutSubmissionService : ICheckoutSubmissionService
             shippingSelection.Apartment,
             shippingSelection.PostalCode,
             shippingSelection.PickupPointCode,
-            shippingSelection.PickupPointName);
+            shippingSelection.PickupPointName
+            );
 
         if (destinationResult.IsFailure)
             return Result<Shipping>.Failure(destinationResult.Error);
 
-        var cashOnDeliveryAllowed =
-            line.Payment!.Method == PaymentMethod.CashOnDelivery;
-
         var shippingResult = Shipping.Create(
-            ShippingId.New(),
-            orderId,
-            checkout.UserId,
-            line.SellerId,
-            shippingSelection.MethodType,
-            recipientResult.Value!,
-            destinationResult.Value!,
-            shippingSelection.Cost,
-            cashOnDeliveryAllowed,
-            shippingSelection.Comment,
-            nowUtc);
+            id: ShippingId.New(),
+            orderId: orderId,
+            customerId: checkout.UserId,
+            sellerId: line.SellerId,
+            method: MapShippingMethod(shippingSelection.MethodType),
+            settlementMode: ResolveSettlementMode(line),
+            recipient: recipientResult.Value!,
+            destination: destinationResult.Value!,
+            nowUtc: nowUtc);
 
         if (shippingResult.IsFailure)
             return Result<Shipping>.Failure(shippingResult.Error);
@@ -181,24 +202,10 @@ public sealed class CheckoutSubmissionService : ICheckoutSubmissionService
     {
         var merchantOrderReference = ResolveMerchantOrderReference(order);
 
-        /*var paymentResult = Payment.Create(
-            PaymentId.New(),
-            orderId,
-            checkout.UserId,
-            line.Payment!.Provider is null
-                ? PaymentProvider.Unknown
-                : Enum.TryParse<PaymentProvider>(line.Payment.Provider, ignoreCase: true, out var provider)
-                    ? provider
-                    : PaymentProvider.Unknown,
-            line.Payment.Method,
-            ResolvePaymentAmount(order, line),
-            merchantOrderReference,
-            nowUtc);*/
-
         var paymentResult = Payment.Create(
             PaymentId.New(),
             orderId,
-            line.SellerId,  
+            line.SellerId,
             checkout.UserId,
             line.Payment!.Provider is null
                 ? PaymentProvider.Unknown
@@ -220,16 +227,12 @@ public sealed class CheckoutSubmissionService : ICheckoutSubmissionService
         Order order,
         CheckoutLine line)
     {
-        // Если у твоего Order уже есть TotalAmount/Money — замени на него.
-        // Пока безопасный fallback: цена линии + стоимость доставки.
         return line.LineTotal + line.Shipping!.Cost;
     }
 
     private static string ResolveMerchantOrderReference(
         Order order)
     {
-        // Подстрой под свой Order:
-        // например order.Number.Value или order.Id.Value.ToString()
         return order.Id.Value.ToString();
     }
 }

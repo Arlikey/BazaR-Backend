@@ -1,4 +1,6 @@
 ﻿using BazaR.Backend.Application.Abstractions.Files;
+using BazaR.Backend.Application.Abstractions.Integrations.NovaPoshta;
+
 using BazaR.Backend.Application.Abstractions.Persistence;
 using BazaR.Backend.Application.Abstractions.ReadModels;
 using BazaR.Backend.Application.Abstractions.Repositories;
@@ -10,7 +12,10 @@ using BazaR.Backend.Application.Checkouts.Services;
 using BazaR.Backend.Application.Common.Abstractions;
 using BazaR.Backend.Application.Common.Abstractions.Security;
 using BazaR.Backend.Domain.Repositories;
+using BazaR.Backend.Domain.Shippings;
 using BazaR.Backend.Infrastructure.Auth;
+using BazaR.Backend.Infrastructure.Integrations.NovaPoshta;
+
 using BazaR.Backend.Infrastructure.Payments;
 using BazaR.Backend.Infrastructure.Persistence;
 using BazaR.Backend.Infrastructure.Persistence.Files;
@@ -18,6 +23,7 @@ using BazaR.Backend.Infrastructure.Persistence.ReadModels;
 //using BazaR.Backend.Infrastructure.Persistence.Queries;
 using BazaR.Backend.Infrastructure.Persistence.Repositories;
 using BazaR.Backend.Infrastructure.Persistence.Services;
+using BazaR.Backend.Infrastructure.Repositories;
 using BazaR.Backend.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -94,8 +100,12 @@ public static class DependencyInjection
         services.AddScoped<IFileStorage, LocalFileStorage>();
 
         services.AddScoped<IFavoriteRepository, FavoriteRepository>();
+        services.AddScoped<IBrandRepository, BrandRepository>();
+        services.AddScoped<IBrandReadRepository, BrandReadRepository>();
+
 
         services.AddScoped<IShippingRepository, ShippingRepository>();
+        services.AddScoped<IShippingReadRepository, ShippingReadRepository>();
         services.AddScoped<ICheckoutRepository, CheckoutRepository>();
         services.AddScoped<IShippingProfileRepository, ShippingProfileRepository>();
         services.AddScoped<IShippingSelectionFactory, ShippingSelectionFactory>();
@@ -110,6 +120,28 @@ public static class DependencyInjection
 
         services.AddScoped<IPaymentRepository, PaymentRepository>();
         services.AddScoped<ILiqPayCheckoutService, LiqPayCheckoutService>();
+
+        // Регистрация настроек NovaPoshta
+        services.Configure<NovaPoshtaOptions>(configuration.GetSection("NovaPoshta"));
+
+        // Регистрация HTTP-клиента для Nova Poshta API
+        services.AddHttpClient<INovaPoshtaGateway, NovaPoshtaGateway>();
+
+
+
+       /* services.Configure<NovaPostSandboxOptions>(configuration.GetSection("NovaPostSandbox"));
+
+        services.AddHttpClient<INovaPostSandboxTokenProvider, NovaPostSandboxTokenProvider>();
+
+       
+        services.AddHttpClient<INovaPostDirectoryGateway, NovaPostDirectoryGateway>();
+        services.AddHttpClient<INovaPostShipmentGateway, NovaPostShipmentGateway>();
+
+        
+
+        services.AddScoped<IShipmentCreationStrategy, CashOnDeliveryShipmentStrategy>();
+        services.AddScoped<IShipmentCreationStrategy, AfterPaymentShipmentStrategy>();
+        services.AddScoped<IShipmentStrategyFactory, ShipmentStrategyFactory>();*/
 
         return services;
     }

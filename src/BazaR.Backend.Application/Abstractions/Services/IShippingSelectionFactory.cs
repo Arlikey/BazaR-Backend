@@ -8,16 +8,16 @@ namespace BazaR.Backend.Application.Abstractions.Services;
 public interface IShippingSelectionFactory
 {
     Result<ShippingSelection> Create(
-        ShippingProfile profile,
-        ShippingMethodType methodType,
-        string country,
-        string region,
-        string city,
-        string? street,
-        string? house,
-        string? apartment,
-        string? postalCode,
-        string? pickupPointCode,
-        string? pickupPointName,
-        string? comment);
+    ShippingProfile profile,
+    ShippingMethodType methodType,
+    string country,
+    string region,
+    string city,
+    string? street,
+    string? house,
+    string? apartment,
+    string? postalCode,
+    string? pickupPointCode,
+    string? pickupPointName,
+    string? comment);
 }

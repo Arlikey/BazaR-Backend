@@ -2,11 +2,10 @@
 
 public enum ShippingStatus
 {
-    Pending = 0,
-    Preparing = 1,
-    ReadyToShip = 2,
-    Shipped = 3,
-    Delivered = 4,
-    Cancelled = 5,
-    Returned = 6
+    AwaitingSender = 1,
+    ReadyToDispatch = 2,
+    Dispatched = 3,
+    ReadyForPickup = 4,
+    Delivered = 5,
+    Cancelled = 6
 }

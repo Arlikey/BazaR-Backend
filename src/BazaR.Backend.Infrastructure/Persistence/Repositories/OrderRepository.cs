@@ -13,8 +13,8 @@ public sealed class OrderRepository : IOrderRepository
 
     public Task<Order?> GetByIdAsync(OrderId id, CancellationToken cancellationToken = default)
      => _db.Orders
-         .Include("_items")
-         .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+           .Include(x => x.Items)
+           .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
     public Task Add(Order order)
     {

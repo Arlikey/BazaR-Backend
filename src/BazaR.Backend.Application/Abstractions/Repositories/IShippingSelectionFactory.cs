@@ -1,4 +1,4 @@
-﻿using BazaR.Backend.Domain.Checkouts;
+﻿/*using BazaR.Backend.Domain.Checkouts;
 using BazaR.Backend.Domain.Common;
 using BazaR.Backend.Domain.Shipping;
 using BazaR.Backend.Domain.ShippingProfiles;
@@ -21,4 +21,4 @@ public interface IShippingSelectionFactory
         string? pickupPointName,
         string? comment,
         CancellationToken ct);
-}
+}*/

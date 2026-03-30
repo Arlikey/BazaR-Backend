@@ -1,4 +1,5 @@
-﻿using BazaR.Backend.Domain.Carts;
+﻿using BazaR.Backend.Domain.Brands;
+using BazaR.Backend.Domain.Carts;
 using BazaR.Backend.Domain.Catalog.Attributes;
 using BazaR.Backend.Domain.Catalog.Products;
 using BazaR.Backend.Domain.Categories;
@@ -26,7 +27,7 @@ public sealed class AppDbContext : DbContext
     public DbSet<Checkout> Checkouts => Set<Checkout>();
     public DbSet<Payment> Payments => Set<Payment>();
     public DbSet<ShippingProfile> ShippingProfiles => Set<ShippingProfile>();
-
+    public DbSet<Brand> Brands => Set<Brand>();
     public DbSet<PaymentProfile> PaymentProfiles => Set<PaymentProfile>();
     public DbSet<PaymentMethodConfig> PaymentProfileMethods => Set<PaymentMethodConfig>();
 

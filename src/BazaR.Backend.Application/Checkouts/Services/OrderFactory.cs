@@ -3,6 +3,7 @@ using BazaR.Backend.Domain.Checkouts;
 using BazaR.Backend.Domain.Common;
 using BazaR.Backend.Domain.Orders;
 using BazaR.Backend.Domain.ShippingProfiles;
+using BazaR.Backend.Domain.Shippings;
 using BazaR.Backend.Domain.Users;
 
 namespace BazaR.Backend.Application.Checkouts.Services;
@@ -102,12 +103,11 @@ public sealed class OrderFactory : IOrderFactory
     {
         return methodType switch
         {
-            ShippingMethodType.PickupBazar => DeliveryMethod.Pickup,
-            ShippingMethodType.NovaPoshtaWarehouse => DeliveryMethod.NovaPoshtaWarehouse,
-            ShippingMethodType.NovaPoshtaLocker => DeliveryMethod.NovaPoshtaLocker,
-            ShippingMethodType.NovaPoshtaCourier => DeliveryMethod.NovaPoshtaCourier,
-            ShippingMethodType.UkrPoshtaBranch => DeliveryMethod.UkrPoshta,
-            ShippingMethodType.UkrPoshtaCourier => DeliveryMethod.UkrPoshta,
+            ShippingMethodType.NovaPoshtaWarehouse => DeliveryMethod.NovaPoshta,
+            ShippingMethodType.NovaPoshtaLocker => DeliveryMethod.NovaPoshta,
+            ShippingMethodType.NovaPoshtaCourier => DeliveryMethod.NovaPoshta,
+            ShippingMethodType.BazaRCourier => DeliveryMethod.BazaRCourier,
+            ShippingMethodType.BazaRPickup => DeliveryMethod.BazaRPickup,
             _ => DeliveryMethod.Unknown
         };
     }

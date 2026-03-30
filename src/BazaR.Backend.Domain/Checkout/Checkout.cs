@@ -90,6 +90,9 @@ public sealed class Checkout : AggregateRoot<CheckoutId>
     {
         EnsureMutable();
 
+        if (shipping is null)
+            throw new InvalidOperationException("Shipping selection is required.");
+
         var line = GetRequiredLine(lineId);
         line.SetShipping(shipping);
 

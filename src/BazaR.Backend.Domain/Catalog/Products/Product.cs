@@ -1,4 +1,5 @@
-﻿using BazaR.Backend.Domain.Catalog;
+﻿using BazaR.Backend.Domain.Brands;
+using BazaR.Backend.Domain.Catalog;
 using BazaR.Backend.Domain.Catalog.Attributes;
 using BazaR.Backend.Domain.Catalog.Products.Events;
 using BazaR.Backend.Domain.Categories;
@@ -528,6 +529,14 @@ public sealed class Product : AggregateRoot<ProductId>
         Touch();
         return Result.Success();
     }
+
+
+    public Result SetBrand(BrandId? brandId)
+    {
+        BrandId = brandId;
+        return Result.Success();
+    }
+
 
     public string? GetMainImageUrl()
         => _images

@@ -1,4 +1,5 @@
-﻿using BazaR.Backend.Domain.Catalog;
+﻿using BazaR.Backend.Domain.Brands;
+using BazaR.Backend.Domain.Catalog;
 using BazaR.Backend.Domain.Catalog.Products;
 using BazaR.Backend.Domain.Categories;
 using BazaR.Backend.Domain.Sellers;

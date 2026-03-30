@@ -18,6 +18,7 @@ namespace BazaR.Backend.Api.Controllers.Public;
 public sealed class PublicCategoriesController : ControllerBase
 {
     private readonly IMediator _mediator;
+
     public PublicCategoriesController(IMediator mediator) => _mediator = mediator;
 
     [HttpGet]
@@ -28,8 +29,14 @@ public sealed class PublicCategoriesController : ControllerBase
             return ProblemFromError(result.Error);
 
         var response = result.Value
-            .Select(x => new CategoryListItemResponse(x.Id, x.Name, x.ParentCategoryId, x.SortOrder))
+            .Select(x => new CategoryListItemResponse(
+                x.Id,
+                x.Name,
+                x.ParentCategoryId,
+                x.SortOrder,
+                x.ImageUrl))
             .ToList();
+
         return Ok(response);
     }
 
@@ -40,6 +47,7 @@ public sealed class PublicCategoriesController : ControllerBase
         var result = await _mediator.Send(new GetCategoryByIdQuery(categoryId), ct);
         if (result.IsFailure)
             return ProblemFromError(result.Error);
+
         return Ok(result.Value);
     }
 
@@ -49,6 +57,7 @@ public sealed class PublicCategoriesController : ControllerBase
         var result = await _mediator.Send(new GetCategoriesTreeQuery(), ct);
         if (result.IsFailure)
             return ProblemFromError(result.Error);
+
         return Ok(result.Value);
     }
 
@@ -60,8 +69,14 @@ public sealed class PublicCategoriesController : ControllerBase
             return ProblemFromError(result.Error);
 
         var response = result.Value
-            .Select(x => new CategoryListItemResponse(x.Id, x.Name, x.ParentCategoryId, x.SortOrder))
+            .Select(x => new CategoryListItemResponse(
+                x.Id,
+                x.Name,
+                x.ParentCategoryId,
+                x.SortOrder,
+                x.ImageUrl))
             .ToList();
+
         return Ok(response);
     }
 
@@ -72,6 +87,7 @@ public sealed class PublicCategoriesController : ControllerBase
         var result = await _mediator.Send(new GetCategoryAttributesTemplateQuery(categoryId), ct);
         if (result.IsFailure)
             return ProblemFromError(result.Error);
+
         return Ok(result.Value);
     }
 
@@ -83,6 +99,7 @@ public sealed class PublicCategoriesController : ControllerBase
             "Category.ParentCategoryNotFound" => StatusCodes.Status404NotFound,
             _ => StatusCodes.Status400BadRequest
         };
+
         return Problem(title: error.Code, detail: error.Message, statusCode: status);
     }
 }

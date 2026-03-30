@@ -5,14 +5,14 @@ using BazaR.Backend.Application.Catalog.Categories.Commands.RemoveCategoryAttrib
 using BazaR.Backend.Application.Catalog.Categories.Commands.UpdateCategoryAttribute;
 using BazaR.Backend.Domain.Common;
 using MediatR;
-
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BazaR.Backend.Api.Controllers.Admin;
 
 [ApiController]
 [Route("api/admin/catalog/categories/{categoryId:guid}/attributes")]
-
+[Authorize(Policy = "Admin")]
 public sealed class AdminCategoryAttributesController : ControllerBase
 {
     private readonly IMediator _mediator;

@@ -18,6 +18,9 @@ namespace BazaR.Backend.Domain.Orders
 
         Courier = 5,             // Курьер магазина
 
-        Pickup = 6               // Самовывоз
+        Pickup = 6,               // Самовывоз
+        NovaPoshta = 7,
+        BazaRCourier = 8,
+        BazaRPickup = 9
     }
 }

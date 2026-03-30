@@ -2,7 +2,6 @@
 using BazaR.Backend.Domain.Categories;
 using BazaR.Backend.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
-using System.Linq;
 
 namespace BazaR.Backend.Infrastructure.Persistence.ReadModels;
 
@@ -26,6 +25,7 @@ public sealed class CategoryReadRepository : ICategoryReadRepository
                     ? c.ParentCategoryId.Value.Value
                     : (Guid?)null,
                 c.SortOrder,
+                c.Image != null ? c.Image.Url : null,
                 c.Attributes
                     .OrderBy(a => a.SectionOrder ?? int.MaxValue)
                     .ThenBy(a => a.SectionName)
@@ -51,9 +51,12 @@ public sealed class CategoryReadRepository : ICategoryReadRepository
             .Select(c => new CategoryListItemDto(
                 c.Id.Value,
                 c.Name,
-                c.ParentCategoryId.HasValue ? c.ParentCategoryId.Value.Value : (Guid?)null,
+                c.ParentCategoryId.HasValue
+                    ? c.ParentCategoryId.Value.Value
+                    : (Guid?)null,
                 c.SortOrder,
-                c.Attributes.Count
+                c.Attributes.Count,
+                c.Image != null ? c.Image.Url : null
             ))
             .ToListAsync(ct);
 
@@ -69,7 +72,6 @@ public sealed class CategoryReadRepository : ICategoryReadRepository
 
         if (!string.IsNullOrWhiteSpace(trimmed))
         {
-            
             var pattern = $"%{trimmed}%";
             query = query.Where(c => EF.Functions.ILike(c.Name, pattern));
         }
@@ -80,9 +82,12 @@ public sealed class CategoryReadRepository : ICategoryReadRepository
             .Select(c => new CategoryListItemDto(
                 c.Id.Value,
                 c.Name,
-                c.ParentCategoryId.HasValue ? c.ParentCategoryId.Value.Value : (Guid?)null,
+                c.ParentCategoryId.HasValue
+                    ? c.ParentCategoryId.Value.Value
+                    : (Guid?)null,
                 c.SortOrder,
-                c.Attributes.Count
+                c.Attributes.Count,
+                c.Image != null ? c.Image.Url : null
             ))
             .ToListAsync(ct);
     }
@@ -96,7 +101,9 @@ public sealed class CategoryReadRepository : ICategoryReadRepository
             .Select(c => new CategoryTreeNodeDto(
                 c.Id.Value,
                 c.Name,
-                c.ParentCategoryId.HasValue ? c.ParentCategoryId.Value.Value : (Guid?)null,
+                c.ParentCategoryId.HasValue
+                    ? c.ParentCategoryId.Value.Value
+                    : (Guid?)null,
                 c.SortOrder
             ))
             .ToListAsync(ct);

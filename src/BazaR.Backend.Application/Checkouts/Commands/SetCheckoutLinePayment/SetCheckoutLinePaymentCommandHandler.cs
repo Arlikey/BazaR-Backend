@@ -4,7 +4,7 @@ using BazaR.Backend.Application.Common.Abstractions;
 using BazaR.Backend.Domain.Checkouts;
 using BazaR.Backend.Domain.Common;
 using BazaR.Backend.Domain.PaymentProfiles;
-using BazaR.Backend.Domain.PaymentProfiles;
+
 using BazaR.Backend.Domain.Payments;
 using MediatR;
 

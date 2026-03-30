@@ -59,6 +59,8 @@ builder.Services.Configure<LocalFileStorageOptions>(
 );
 
 
+
+
 var allowedOrigins = builder.Configuration
     .GetSection("Cors:AllowedOrigins")
     .Get<string[]>() ?? Array.Empty<string>();

@@ -47,16 +47,16 @@ public sealed class ShippingSelectionFactory : IShippingSelectionFactory
                 new Error("ShippingProfile.Method.NotAvailable", "Selected shipping method is not available."));
         }
 
+        if (string.IsNullOrWhiteSpace(country))
+        {
+            return Result<ShippingSelection>.Failure(
+                new Error("Checkout.Shipping.Country.Required", "Country is required."));
+        }
+
         if (methodConfig.RequiresCity && string.IsNullOrWhiteSpace(city))
         {
             return Result<ShippingSelection>.Failure(
                 new Error("Checkout.Shipping.City.Required", "City is required for selected shipping method."));
-        }
-
-        if (methodConfig.RequiresPickupPoint && string.IsNullOrWhiteSpace(pickupPointCode))
-        {
-            return Result<ShippingSelection>.Failure(
-                new Error("Checkout.Shipping.PickupPoint.Required", "Pickup point is required for selected shipping method."));
         }
 
         var hasStreetAddress =
@@ -66,7 +66,17 @@ public sealed class ShippingSelectionFactory : IShippingSelectionFactory
         if (methodConfig.RequiresStreetAddress && !hasStreetAddress)
         {
             return Result<ShippingSelection>.Failure(
-                new Error("Checkout.Shipping.Address.Required", "Street and house are required for selected shipping method."));
+                new Error(
+                    "Checkout.Shipping.Address.Required",
+                    "Street and house are required for selected shipping method."));
+        }
+
+        if (methodConfig.RequiresPickupPoint && string.IsNullOrWhiteSpace(pickupPointCode))
+        {
+            return Result<ShippingSelection>.Failure(
+                new Error(
+                    "Checkout.Shipping.PickupPoint.Required",
+                    "Pickup point is required for selected shipping method."));
         }
 
         var costResult = Money.Create(methodConfig.BaseFee, methodConfig.Currency);
@@ -80,13 +90,16 @@ public sealed class ShippingSelectionFactory : IShippingSelectionFactory
             country,
             region,
             city,
-            street,
-            house,
-            apartment,
-            postalCode,
-            pickupPointCode,
-            pickupPointName,
-            comment,
+            Normalize(street),
+            Normalize(house),
+            Normalize(apartment),
+            Normalize(postalCode),
+            Normalize(pickupPointCode),
+            Normalize(pickupPointName),
+            Normalize(comment),
             costResult.Value!);
     }
+
+    private static string? Normalize(string? value)
+        => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }

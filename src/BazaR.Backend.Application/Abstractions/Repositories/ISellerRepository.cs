@@ -1,4 +1,5 @@
 ﻿using BazaR.Backend.Domain.Sellers;
+using BazaR.Backend.Domain.Users;
 
 namespace BazaR.Backend.Application.Abstractions.Repositories;
 
@@ -21,4 +22,5 @@ public interface ISellerRepository
     Task<bool> SlugExistsAsync(SellerSlug slug, SellerId? excludeSellerId = null, CancellationToken ct = default);
 
     Task<bool> TaxNumberExistsAsync(string taxNumber, SellerId? excludeSellerId = null, CancellationToken ct = default);
+    Task<Seller?> GetByOwnerUserIdAsync(UserId userId, CancellationToken ct);
 }

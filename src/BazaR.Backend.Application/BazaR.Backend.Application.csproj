@@ -10,7 +10,6 @@
     <Folder Include="Payments\Services\" />
     <Folder Include="Sellers\Queries\GetById\" />
     <Folder Include="Sellers\Queries\GetBySlug\" />
-    <Folder Include="Shippings\DTOs\" />
   </ItemGroup>
 
   <ItemGroup>

@@ -8,7 +8,8 @@ public sealed record CategoryListItemDto(
     string Name,
     Guid? ParentCategoryId,
     int SortOrder,
-    int AttributesCount);
+    int AttributesCount,
+    string? ImageUrl);
 
 // Детали категории + шаблон атрибутов
 public sealed record CategoryDetailsDto(
@@ -16,6 +17,7 @@ public sealed record CategoryDetailsDto(
     string Name,
     Guid? ParentCategoryId,
     int SortOrder,
+    string? ImageUrl,
     IReadOnlyList<CategoryAttributeTemplateItemDto> Attributes);
 
 public sealed record CategoryAttributeTemplateItemDto(

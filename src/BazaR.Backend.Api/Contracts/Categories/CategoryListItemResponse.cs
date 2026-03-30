@@ -4,5 +4,5 @@ public sealed record CategoryListItemResponse(
     Guid Id,
     string Name,
     Guid? ParentCategoryId,
-    int SortOrder
-);
+    int SortOrder,
+    string? ImageUrl);

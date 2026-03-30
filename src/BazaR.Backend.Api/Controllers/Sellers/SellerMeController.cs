@@ -16,7 +16,7 @@ namespace BazaR.Backend.Api.Controllers.Sellers;
 
 [ApiController]
 [Route("api/seller/me")]
-[Authorize] 
+[Authorize(Roles = "Seller")]
 public sealed class SellerMeController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -124,7 +124,7 @@ public sealed class SellerMeController : ControllerBase
         "Seller.InvalidStatusTransition" => StatusCodes.Status409Conflict,
         "Seller.CannotModifyClosed" => StatusCodes.Status409Conflict,
 
-        // новые ошибки из домена
+      
         "Seller.ContactsRequired" => StatusCodes.Status409Conflict,
         "Seller.DescriptionTooLong" => StatusCodes.Status400BadRequest,
         "Seller.EmailInvalid" => StatusCodes.Status400BadRequest,

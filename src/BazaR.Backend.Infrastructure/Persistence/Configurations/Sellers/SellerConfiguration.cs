@@ -89,7 +89,6 @@ public sealed class SellerConfiguration : IEntityTypeConfiguration<Seller>
                 .HasMaxLength(2)
                 .IsRequired();
 
-           
             cc.HasIndex(c => c.Value)
                 .HasDatabaseName("ix_sellers_country_code");
 
@@ -129,6 +128,42 @@ public sealed class SellerConfiguration : IEntityTypeConfiguration<Seller>
             phone.WithOwner();
         });
         builder.Navigation(x => x.SupportPhone).IsRequired(false);
+
+        // ======================
+        // Shipping settings - owned
+        // ======================
+        builder.OwnsOne(x => x.ShippingSettings, shipping =>
+        {
+            shipping.Property(x => x.SenderName)
+                .HasColumnName("shipping_sender_name")
+                .HasMaxLength(200)
+                .IsRequired();
+
+            shipping.Property(x => x.SenderPhone)
+                .HasColumnName("shipping_sender_phone")
+                .HasMaxLength(50)
+                .IsRequired();
+
+            shipping.Property(x => x.SenderEmail)
+                .HasColumnName("shipping_sender_email")
+                .HasMaxLength(200);
+
+            shipping.Property(x => x.CountryCode)
+                .HasColumnName("shipping_country_code")
+                .HasMaxLength(10)
+                .IsRequired();
+
+            shipping.Property(x => x.NovaPostDivisionId)
+                .HasColumnName("shipping_nova_post_division_id")
+                .HasMaxLength(100);
+
+            shipping.Property(x => x.NovaPostDivisionName)
+                .HasColumnName("shipping_nova_post_division_name")
+                .HasMaxLength(200);
+
+            shipping.WithOwner();
+        });
+        builder.Navigation(x => x.ShippingSettings).IsRequired(false);
 
         // ======================
         // Moderation / decision history
@@ -189,12 +224,8 @@ public sealed class SellerConfiguration : IEntityTypeConfiguration<Seller>
             .HasFilter("tax_number IS NOT NULL")
             .HasDatabaseName("ux_sellers_tax_number");
 
-      
-
-       
         builder.Ignore("DomainEvents");
 
-      
         builder.ToTable(t =>
         {
             t.HasCheckConstraint("ck_sellers_name_not_empty", "char_length(name) > 0");

@@ -1,5 +1,6 @@
 ﻿using BazaR.Backend.Application.Abstractions.Repositories;
 using BazaR.Backend.Domain.Sellers;
+using BazaR.Backend.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 
 namespace BazaR.Backend.Infrastructure.Persistence.Repositories;
@@ -21,11 +22,18 @@ public sealed class SellerRepository : ISellerRepository
         => await _db.Sellers.AnyAsync(x => x.Id == id, ct);
 
     public async Task<Seller?> GetByOwnerUserIdAsync(Guid ownerUserId, CancellationToken ct = default)
+
     {
         if (ownerUserId == Guid.Empty) return null;
 
         return await _db.Sellers.FirstOrDefaultAsync(x => x.OwnerUserId == ownerUserId, ct);
     }
+
+    public async Task<Seller?> GetByOwnerUserIdAsync(UserId userId, CancellationToken ct = default)
+    {
+        return await _db.Sellers.FirstOrDefaultAsync(x => x.OwnerUserId == userId.Value, ct);
+    }
+
 
     public async Task<Seller?> GetBySlugAsync(string slug, CancellationToken ct = default)
     {

@@ -2,6 +2,7 @@
 using BazaR.Backend.Application.Abstractions.Persistence;
 using BazaR.Backend.Application.Abstractions.Repositories;
 using BazaR.Backend.Application.Common.Abstractions;
+using BazaR.Backend.Domain.Brands;
 using BazaR.Backend.Domain.Catalog;
 using BazaR.Backend.Domain.Catalog.Attributes;
 using BazaR.Backend.Domain.Catalog.Products;

@@ -149,7 +149,6 @@ public sealed class CheckoutConfiguration : IEntityTypeConfiguration<Checkout>
                     value => new CheckoutId(value))
                 .IsRequired();
 
-            // Для owned collection лучше составной ключ:
             line.HasKey("CheckoutId", nameof(CheckoutLine.Id));
 
             line.Property(x => x.Id)
@@ -212,8 +211,6 @@ public sealed class CheckoutConfiguration : IEntityTypeConfiguration<Checkout>
             line.Navigation(x => x.UnitPrice)
                 .IsRequired();
 
-            // LineTotal у тебя вычисляемый, а не сохраняемый.
-            // Поэтому его не надо мапить.
             line.Ignore(x => x.LineTotal);
 
             line.OwnsOne(x => x.Recipient, recipient =>

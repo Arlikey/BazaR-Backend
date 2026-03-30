@@ -19,7 +19,7 @@ namespace BazaR.Backend.Api.Controllers.Seller;
 
 [ApiController]
 [Route("api/seller/shipping-profile")]
-[Authorize]
+[Authorize(Roles = "Seller")]
 public sealed class SellerShippingProfileController : ControllerBase
 {
     private readonly IMediator _mediator;

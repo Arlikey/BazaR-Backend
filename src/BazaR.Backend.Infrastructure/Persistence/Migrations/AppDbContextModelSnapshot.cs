@@ -22,6 +22,63 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("BazaR.Backend.Domain.Brands.Brand", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("description");
+
+                    b.Property<string>("LogoUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("logo_url");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("slug");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .HasDatabaseName("ix_brands_name");
+
+                    b.HasIndex("Slug")
+                        .IsUnique()
+                        .HasDatabaseName("ix_brands_slug");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_brands_status");
+
+                    b.ToTable("brands", (string)null);
+                });
+
             modelBuilder.Entity("BazaR.Backend.Domain.Catalog.Attributes.AttributeDefinition", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1270,104 +1327,74 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("cancelled_at_utc");
 
-                    b.Property<string>("Carrier")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("carrier");
-
-                    b.Property<bool>("CashOnDeliveryAllowed")
-                        .HasColumnType("boolean")
-                        .HasColumnName("cash_on_delivery_allowed");
-
-                    b.Property<string>("Comment")
-                        .HasColumnType("text")
-                        .HasColumnName("comment");
-
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("customer_id");
 
                     b.Property<DateTimeOffset?>("DeliveredAtUtc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("delivered_at_utc");
 
-                    b.Property<string>("MethodType")
+                    b.Property<DateTimeOffset?>("DispatchedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("dispatched_at_utc");
+
+                    b.Property<string>("Method")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("method_type");
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("method");
 
                     b.Property<Guid>("OrderId")
                         .HasColumnType("uuid")
                         .HasColumnName("order_id");
 
-                    b.Property<DateTimeOffset?>("PreparingAtUtc")
+                    b.Property<DateTimeOffset?>("ReadyForPickupAtUtc")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("preparing_at_utc");
-
-                    b.Property<DateTimeOffset?>("ReadyToShipAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("ready_to_ship_at_utc");
-
-                    b.Property<DateTimeOffset?>("ReturnedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("returned_at_utc");
+                        .HasColumnName("ready_for_pickup_at_utc");
 
                     b.Property<Guid>("SellerId")
                         .HasColumnType("uuid")
                         .HasColumnName("seller_id");
 
-                    b.Property<DateTimeOffset?>("ShippedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("shipped_at_utc");
+                    b.Property<string>("SettlementMode")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("settlement_mode");
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
                         .HasColumnName("status");
 
                     b.Property<string>("TrackingNumber")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
                         .HasColumnName("tracking_number");
 
                     b.Property<DateTimeOffset>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at_utc");
 
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("CreatedAtUtc")
-                        .HasDatabaseName("ix_shippings_created_at_utc");
+                    b.HasIndex("CustomerId");
 
-                    b.HasIndex("DeliveredAtUtc")
-                        .HasDatabaseName("ix_shippings_delivered_at_utc");
+                    b.HasIndex("Method");
 
-                    b.HasIndex("MethodType")
-                        .HasDatabaseName("ix_shippings_method_type");
+                    b.HasIndex("OrderId");
 
-                    b.HasIndex("OrderId")
-                        .HasDatabaseName("ix_shippings_order_id");
+                    b.HasIndex("SellerId");
 
-                    b.HasIndex("SellerId")
-                        .HasDatabaseName("ix_shippings_seller_id");
+                    b.HasIndex("Status");
 
-                    b.HasIndex("ShippedAtUtc")
-                        .HasDatabaseName("ix_shippings_shipped_at_utc");
-
-                    b.HasIndex("Status")
-                        .HasDatabaseName("ix_shippings_status");
-
-                    b.HasIndex("TrackingNumber")
-                        .HasDatabaseName("ix_shippings_tracking_number");
-
-                    b.HasIndex("UserId")
-                        .HasDatabaseName("ix_shippings_user_id");
+                    b.HasIndex("TrackingNumber");
 
                     b.ToTable("shippings", (string)null);
                 });
@@ -2481,6 +2508,52 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
                                 .HasForeignKey("SellerId");
                         });
 
+                    b.OwnsOne("BazaR.Backend.Domain.Sellers.SellerShippingSettings", "ShippingSettings", b1 =>
+                        {
+                            b1.Property<Guid>("SellerId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("CountryCode")
+                                .IsRequired()
+                                .HasMaxLength(10)
+                                .HasColumnType("character varying(10)")
+                                .HasColumnName("shipping_country_code");
+
+                            b1.Property<string>("NovaPostDivisionId")
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)")
+                                .HasColumnName("shipping_nova_post_division_id");
+
+                            b1.Property<string>("NovaPostDivisionName")
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("shipping_nova_post_division_name");
+
+                            b1.Property<string>("SenderEmail")
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("shipping_sender_email");
+
+                            b1.Property<string>("SenderName")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("shipping_sender_name");
+
+                            b1.Property<string>("SenderPhone")
+                                .IsRequired()
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)")
+                                .HasColumnName("shipping_sender_phone");
+
+                            b1.HasKey("SellerId");
+
+                            b1.ToTable("sellers");
+
+                            b1.WithOwner()
+                                .HasForeignKey("SellerId");
+                        });
+
                     b.OwnsOne("BazaR.Backend.Domain.Sellers.SellerSlug", "Slug", b1 =>
                         {
                             b1.Property<Guid>("SellerId")
@@ -2526,6 +2599,8 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
                     b.Navigation("CountryCode")
                         .IsRequired();
 
+                    b.Navigation("ShippingSettings");
+
                     b.Navigation("Slug")
                         .IsRequired();
 
@@ -2545,30 +2620,6 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("BazaR.Backend.Domain.Shippings.Shipping", b =>
                 {
-                    b.OwnsOne("BazaR.Backend.Domain.Common.Money", "Cost", b1 =>
-                        {
-                            b1.Property<Guid>("ShippingId")
-                                .HasColumnType("uuid");
-
-                            b1.Property<decimal>("Amount")
-                                .HasPrecision(18, 2)
-                                .HasColumnType("numeric(18,2)")
-                                .HasColumnName("cost_amount_value");
-
-                            b1.Property<string>("Currency")
-                                .IsRequired()
-                                .HasMaxLength(10)
-                                .HasColumnType("character varying(10)")
-                                .HasColumnName("cost_amount_currency");
-
-                            b1.HasKey("ShippingId");
-
-                            b1.ToTable("shippings");
-
-                            b1.WithOwner()
-                                .HasForeignKey("ShippingId");
-                        });
-
                     b.OwnsOne("BazaR.Backend.Domain.Shippings.ShippingDestination", "Destination", b1 =>
                         {
                             b1.Property<Guid>("ShippingId")
@@ -2581,8 +2632,8 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
 
                             b1.Property<string>("City")
                                 .IsRequired()
-                                .HasMaxLength(100)
-                                .HasColumnType("character varying(100)")
+                                .HasMaxLength(150)
+                                .HasColumnType("character varying(150)")
                                 .HasColumnName("destination_city");
 
                             b1.Property<string>("Country")
@@ -2597,18 +2648,18 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
                                 .HasColumnName("destination_house");
 
                             b1.Property<string>("PickupPointCode")
-                                .HasMaxLength(100)
-                                .HasColumnType("character varying(100)")
+                                .HasMaxLength(128)
+                                .HasColumnType("character varying(128)")
                                 .HasColumnName("destination_pickup_point_code");
 
                             b1.Property<string>("PickupPointName")
-                                .HasMaxLength(200)
-                                .HasColumnType("character varying(200)")
+                                .HasMaxLength(256)
+                                .HasColumnType("character varying(256)")
                                 .HasColumnName("destination_pickup_point_name");
 
                             b1.Property<string>("PostalCode")
-                                .HasMaxLength(50)
-                                .HasColumnType("character varying(50)")
+                                .HasMaxLength(32)
+                                .HasColumnType("character varying(32)")
                                 .HasColumnName("destination_postal_code");
 
                             b1.Property<string>("Region")
@@ -2618,8 +2669,8 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
                                 .HasColumnName("destination_region");
 
                             b1.Property<string>("Street")
-                                .HasMaxLength(200)
-                                .HasColumnType("character varying(200)")
+                                .HasMaxLength(150)
+                                .HasColumnType("character varying(150)")
                                 .HasColumnName("destination_street");
 
                             b1.HasKey("ShippingId");
@@ -2636,8 +2687,8 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
                                 .HasColumnType("uuid");
 
                             b1.Property<string>("Email")
-                                .HasMaxLength(200)
-                                .HasColumnType("character varying(200)")
+                                .HasMaxLength(256)
+                                .HasColumnType("character varying(256)")
                                 .HasColumnName("recipient_email");
 
                             b1.Property<string>("FirstName")
@@ -2666,14 +2717,123 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
                                 .HasForeignKey("ShippingId");
                         });
 
-                    b.Navigation("Cost")
-                        .IsRequired();
+                    b.OwnsOne("BazaR.Backend.Domain.Shippings.ShippingSender", "Sender", b1 =>
+                        {
+                            b1.Property<Guid>("ShippingId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("CountryCode")
+                                .IsRequired()
+                                .HasMaxLength(16)
+                                .HasColumnType("character varying(16)")
+                                .HasColumnName("sender_country_code");
+
+                            b1.Property<string>("Name")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("sender_name");
+
+                            b1.Property<string>("Phone")
+                                .IsRequired()
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)")
+                                .HasColumnName("sender_phone");
+
+                            b1.Property<string>("PickupPointCode")
+                                .HasMaxLength(128)
+                                .HasColumnType("character varying(128)")
+                                .HasColumnName("sender_pickup_point_code");
+
+                            b1.Property<string>("PickupPointName")
+                                .HasMaxLength(256)
+                                .HasColumnType("character varying(256)")
+                                .HasColumnName("sender_pickup_point_name");
+
+                            b1.HasKey("ShippingId");
+
+                            b1.ToTable("shippings");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ShippingId");
+                        });
+
+                    b.OwnsMany("BazaR.Backend.Domain.Shippings.ShippingParcel", "Parcels", b1 =>
+                        {
+                            b1.Property<Guid>("id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<decimal>("ActualWeight")
+                                .HasPrecision(18, 3)
+                                .HasColumnType("numeric(18,3)")
+                                .HasColumnName("actual_weight");
+
+                            b1.Property<string>("CargoCategory")
+                                .IsRequired()
+                                .HasMaxLength(64)
+                                .HasColumnType("character varying(64)")
+                                .HasColumnName("cargo_category");
+
+                            b1.Property<string>("Description")
+                                .IsRequired()
+                                .HasMaxLength(500)
+                                .HasColumnType("character varying(500)")
+                                .HasColumnName("description");
+
+                            b1.Property<decimal>("Height")
+                                .HasPrecision(18, 3)
+                                .HasColumnType("numeric(18,3)")
+                                .HasColumnName("height");
+
+                            b1.Property<decimal>("InsuranceCost")
+                                .HasPrecision(18, 2)
+                                .HasColumnType("numeric(18,2)")
+                                .HasColumnName("insurance_cost");
+
+                            b1.Property<decimal>("Length")
+                                .HasPrecision(18, 3)
+                                .HasColumnType("numeric(18,3)")
+                                .HasColumnName("length");
+
+                            b1.Property<int>("RowNumber")
+                                .HasColumnType("integer")
+                                .HasColumnName("row_number");
+
+                            b1.Property<decimal>("VolumetricWeight")
+                                .HasPrecision(18, 3)
+                                .HasColumnType("numeric(18,3)")
+                                .HasColumnName("volumetric_weight");
+
+                            b1.Property<decimal>("Width")
+                                .HasPrecision(18, 3)
+                                .HasColumnType("numeric(18,3)")
+                                .HasColumnName("width");
+
+                            b1.Property<Guid>("shipping_id")
+                                .HasColumnType("uuid");
+
+                            b1.HasKey("id");
+
+                            b1.HasIndex("shipping_id", "RowNumber")
+                                .IsUnique();
+
+                            b1.ToTable("shipping_parcels", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("shipping_id");
+                        });
 
                     b.Navigation("Destination")
                         .IsRequired();
 
+                    b.Navigation("Parcels");
+
                     b.Navigation("Recipient")
                         .IsRequired();
+
+                    b.Navigation("Sender");
                 });
 
             modelBuilder.Entity("BazaR.Backend.Domain.Users.User", b =>

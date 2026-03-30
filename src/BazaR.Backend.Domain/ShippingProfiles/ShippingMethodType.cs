@@ -11,5 +11,7 @@ public enum ShippingMethodType
     NovaPoshtaCourier = 4,
 
     UkrPoshtaBranch = 5,
-    UkrPoshtaCourier = 6
+    UkrPoshtaCourier = 6,
+    BazaRPickup = 7,
+    BazaRCourier = 8
 }

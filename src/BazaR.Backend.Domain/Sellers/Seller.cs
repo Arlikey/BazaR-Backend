@@ -51,6 +51,9 @@ public sealed class Seller : AggregateRoot<SellerId>
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset UpdatedAt { get; private set; }
 
+
+    public SellerShippingSettings? ShippingSettings { get; private set; }
+
     private Seller(
         SellerId id,
         string name,
@@ -105,6 +108,67 @@ public sealed class Seller : AggregateRoot<SellerId>
 
         return Result<Seller>.Success(
             new Seller(SellerId.New(), trimmed, slugRes.Value!, type, ownerUserId, ccRes.Value!, now));
+    }
+
+
+    public Result SetShippingSettings(
+    string senderName,
+    string senderPhone,
+    string? senderEmail,
+    string countryCode,
+    string? novaPostDivisionId,
+    string? novaPostDivisionName)
+    {
+        if (ShippingSettings is null)
+        {
+            var createResult = SellerShippingSettings.Create(
+                senderName,
+                senderPhone,
+                senderEmail,
+                countryCode,
+                novaPostDivisionId,
+                novaPostDivisionName);
+
+            if (createResult.IsFailure)
+                return Result.Failure(createResult.Error);
+
+            ShippingSettings = createResult.Value;
+            Touch();
+            return Result.Success();
+        }
+
+        var updateResult = ShippingSettings.Update(
+            senderName,
+            senderPhone,
+            senderEmail,
+            countryCode,
+            novaPostDivisionId,
+            novaPostDivisionName);
+
+        if (updateResult.IsFailure)
+            return updateResult;
+
+        Touch();
+        return Result.Success();
+    }
+
+    public Result SetNovaPostShippingDivision(
+        string divisionId,
+        string? divisionName)
+    {
+        if (ShippingSettings is null)
+        {
+            return Result.Failure(new Error(
+                "Seller.ShippingSettings.Required",
+                "Seller shipping settings must be created first."));
+        }
+
+        var result = ShippingSettings.SetNovaPostDivision(divisionId, divisionName);
+        if (result.IsFailure)
+            return result;
+
+        Touch();
+        return Result.Success();
     }
 
     private void Touch(DateTimeOffset? nowUtc = null)
