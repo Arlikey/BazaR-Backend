@@ -17,7 +17,6 @@ public sealed class ProductAttributeValueConfiguration : IEntityTypeConfiguratio
             .HasColumnName("id")
             .ValueGeneratedNever();
 
-       
         builder.Property<ProductId>("product_id")
             .HasColumnName("product_id")
             .HasConversion(
@@ -25,7 +24,6 @@ public sealed class ProductAttributeValueConfiguration : IEntityTypeConfiguratio
                 value => new ProductId(value))
             .IsRequired();
 
-      
         builder.Property(x => x.AttributeId)
             .HasColumnName("attribute_id")
             .HasConversion(
@@ -52,9 +50,33 @@ public sealed class ProductAttributeValueConfiguration : IEntityTypeConfiguratio
         builder.HasIndex(x => x.AttributeId)
             .HasDatabaseName("ix_product_attribute_values_attribute_id");
 
-    
         builder.HasIndex("product_id", nameof(ProductAttributeValue.AttributeId))
             .IsUnique()
             .HasDatabaseName("ux_product_attribute_values_product_attribute");
+
+        ConfigureOptionIds(builder);
+    }
+
+    private static void ConfigureOptionIds(EntityTypeBuilder<ProductAttributeValue> builder)
+    {
+        builder.Navigation(x => x.OptionIds)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        builder.OwnsMany(x => x.OptionIds, b =>
+        {
+            b.ToTable("product_attribute_value_option_ids");
+
+            b.WithOwner()
+                .HasForeignKey("product_attribute_value_id");
+
+            b.Property(x => x.OptionId)
+                .HasColumnName("option_id")
+                .IsRequired();
+
+            b.HasKey("product_attribute_value_id", nameof(ProductAttributeValueOption.OptionId));
+
+            b.HasIndex(x => x.OptionId)
+                .HasDatabaseName("ix_pav_option_ids_option_id");
+        });
     }
 }

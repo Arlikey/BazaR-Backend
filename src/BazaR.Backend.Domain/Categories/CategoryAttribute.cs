@@ -12,10 +12,13 @@ public sealed class CategoryAttribute : Entity<CategoryAttributeId>
     public bool IsRequired { get; private set; }
     public bool IsFilterable { get; private set; }
 
-    
+    public FilterPresentationType? FilterPresentationType { get; private set; }
+
+    public bool IsVisibleInSpecifications { get; private set; }
+    public bool IsVisibleOnProductCard { get; private set; }
+
     public int SortOrder { get; private set; }
 
-   
     public string? SectionName { get; private set; }
     public int? SectionOrder { get; private set; }
 
@@ -24,6 +27,9 @@ public sealed class CategoryAttribute : Entity<CategoryAttributeId>
         AttributeId attributeId,
         bool isRequired,
         bool isFilterable,
+        FilterPresentationType? filterPresentationType,
+        bool isVisibleInSpecifications,
+        bool isVisibleOnProductCard,
         int sortOrder,
         string? sectionName,
         int? sectionOrder)
@@ -32,17 +38,23 @@ public sealed class CategoryAttribute : Entity<CategoryAttributeId>
         AttributeId = attributeId;
         IsRequired = isRequired;
         IsFilterable = isFilterable;
+        FilterPresentationType = filterPresentationType;
+        IsVisibleInSpecifications = isVisibleInSpecifications;
+        IsVisibleOnProductCard = isVisibleOnProductCard;
         SortOrder = sortOrder;
         SectionName = sectionName;
         SectionOrder = sectionOrder;
     }
 
-    private CategoryAttribute() { } 
+    private CategoryAttribute() { }
 
     internal static Result<CategoryAttribute> Create(
         AttributeId attributeId,
         bool isRequired = false,
         bool isFilterable = false,
+        FilterPresentationType? filterPresentationType = null,
+        bool isVisibleInSpecifications = true,
+        bool isVisibleOnProductCard = false,
         int sortOrder = 0,
         string? sectionName = null,
         int? sectionOrder = null)
@@ -57,7 +69,13 @@ public sealed class CategoryAttribute : Entity<CategoryAttributeId>
         if (sectionOrder is not null && sectionOrder.Value < 0)
             return Result<CategoryAttribute>.Failure(CategoryAttributeErrors.SectionOrderCannotBeNegative);
 
-        // Если секции нет — секционный порядок не нужен
+        if (!isFilterable && filterPresentationType is not null)
+        {
+            return Result<CategoryAttribute>.Failure(new Error(
+                "CategoryAttribute.FilterPresentationType.NotAllowed",
+                "Filter presentation type can be set only for filterable attributes."));
+        }
+
         if (normalizedSectionName is null)
             sectionOrder = null;
 
@@ -67,18 +85,68 @@ public sealed class CategoryAttribute : Entity<CategoryAttributeId>
                 attributeId,
                 isRequired,
                 isFilterable,
+                filterPresentationType,
+                isVisibleInSpecifications,
+                isVisibleOnProductCard,
                 sortOrder,
                 normalizedSectionName,
                 sectionOrder));
     }
 
-    internal Result UpdateRules(bool isRequired, bool isFilterable)
+    internal Result UpdateRules(
+        bool isRequired,
+        bool isFilterable,
+        FilterPresentationType? filterPresentationType)
     {
-        if (IsRequired == isRequired && IsFilterable == isFilterable)
+        if (!isFilterable && filterPresentationType is not null)
+        {
+            return Result.Failure(new Error(
+                "CategoryAttribute.FilterPresentationType.NotAllowed",
+                "Filter presentation type can be set only for filterable attributes."));
+        }
+
+        if (IsRequired == isRequired &&
+            IsFilterable == isFilterable &&
+            FilterPresentationType == filterPresentationType)
+        {
             return Result.Success();
+        }
 
         IsRequired = isRequired;
         IsFilterable = isFilterable;
+        FilterPresentationType = isFilterable ? filterPresentationType : null;
+
+        return Result.Success();
+    }
+
+    internal Result SetFilterPresentationType(FilterPresentationType? filterPresentationType)
+    {
+        if (!IsFilterable && filterPresentationType is not null)
+        {
+            return Result.Failure(new Error(
+                "CategoryAttribute.FilterPresentationType.NotAllowed",
+                "Filter presentation type can be set only for filterable attributes."));
+        }
+
+        if (FilterPresentationType == filterPresentationType)
+            return Result.Success();
+
+        FilterPresentationType = filterPresentationType;
+        return Result.Success();
+    }
+
+    internal Result SetVisibility(
+        bool isVisibleInSpecifications,
+        bool isVisibleOnProductCard)
+    {
+        if (IsVisibleInSpecifications == isVisibleInSpecifications &&
+            IsVisibleOnProductCard == isVisibleOnProductCard)
+        {
+            return Result.Success();
+        }
+
+        IsVisibleInSpecifications = isVisibleInSpecifications;
+        IsVisibleOnProductCard = isVisibleOnProductCard;
         return Result.Success();
     }
 

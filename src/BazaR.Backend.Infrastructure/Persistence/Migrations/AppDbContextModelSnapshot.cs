@@ -388,6 +388,11 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("attribute_id");
 
+                    b.Property<string>("FilterPresentationType")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("filter_presentation_type");
+
                     b.Property<bool>("IsFilterable")
                         .HasColumnType("boolean")
                         .HasColumnName("is_filterable");
@@ -395,6 +400,14 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
                     b.Property<bool>("IsRequired")
                         .HasColumnType("boolean")
                         .HasColumnName("is_required");
+
+                    b.Property<bool>("IsVisibleInSpecifications")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_visible_in_specifications");
+
+                    b.Property<bool>("IsVisibleOnProductCard")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_visible_on_product_card");
 
                     b.Property<string>("SectionName")
                         .HasMaxLength(100)
@@ -418,6 +431,15 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
                     b.HasIndex("AttributeId")
                         .HasDatabaseName("ix_category_attributes_attribute_id");
 
+                    b.HasIndex("IsFilterable")
+                        .HasDatabaseName("ix_category_attributes_is_filterable");
+
+                    b.HasIndex("SectionOrder")
+                        .HasDatabaseName("ix_category_attributes_section_order");
+
+                    b.HasIndex("SortOrder")
+                        .HasDatabaseName("ix_category_attributes_sort_order");
+
                     b.HasIndex("category_id")
                         .HasDatabaseName("ix_category_attributes_category_id");
 
@@ -427,6 +449,8 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
 
                     b.ToTable("category_attributes", null, t =>
                         {
+                            t.HasCheckConstraint("ck_category_attributes_filter_presentation_type_requires_filterable", "filter_presentation_type IS NULL OR is_filterable = TRUE");
+
                             t.HasCheckConstraint("ck_category_attributes_section_order_non_negative", "section_order IS NULL OR section_order >= 0");
 
                             t.HasCheckConstraint("ck_category_attributes_sort_order_non_negative", "sort_order >= 0");
@@ -981,6 +1005,280 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_payments_user_id");
 
                     b.ToTable("payments", (string)null);
+                });
+
+            modelBuilder.Entity("BazaR.Backend.Domain.Reviews.ProductRatings.ProductRatingSummary", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("product_id");
+
+                    b.Property<decimal>("AverageRating")
+                        .HasPrecision(4, 2)
+                        .HasColumnType("numeric(4,2)")
+                        .HasColumnName("average_rating");
+
+                    b.Property<int>("FiveStarsCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("five_stars_count");
+
+                    b.Property<int>("FourStarsCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("four_stars_count");
+
+                    b.Property<int>("OneStarCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("one_star_count");
+
+                    b.Property<int>("ReviewsCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("reviews_count");
+
+                    b.Property<int>("ThreeStarsCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("three_stars_count");
+
+                    b.Property<int>("TwoStarsCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("two_stars_count");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AverageRating")
+                        .HasDatabaseName("ix_product_rating_summaries_average_rating");
+
+                    b.HasIndex("ReviewsCount")
+                        .HasDatabaseName("ix_product_rating_summaries_reviews_count");
+
+                    b.ToTable("product_rating_summaries", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_product_rating_summaries_average_rating_range", "average_rating >= 0 AND average_rating <= 5");
+
+                            t.HasCheckConstraint("ck_product_rating_summaries_five_stars_count_non_negative", "five_stars_count >= 0");
+
+                            t.HasCheckConstraint("ck_product_rating_summaries_four_stars_count_non_negative", "four_stars_count >= 0");
+
+                            t.HasCheckConstraint("ck_product_rating_summaries_one_star_count_non_negative", "one_star_count >= 0");
+
+                            t.HasCheckConstraint("ck_product_rating_summaries_reviews_count_non_negative", "reviews_count >= 0");
+
+                            t.HasCheckConstraint("ck_product_rating_summaries_three_stars_count_non_negative", "three_stars_count >= 0");
+
+                            t.HasCheckConstraint("ck_product_rating_summaries_two_stars_count_non_negative", "two_stars_count >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("BazaR.Backend.Domain.Reviews.ProductReviews.ProductReview", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AuthorUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("author_user_id");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)")
+                        .HasColumnName("body");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<DateTime?>("ModeratedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("moderated_at_utc");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("product_id");
+
+                    b.Property<int>("Rating")
+                        .HasColumnType("integer")
+                        .HasColumnName("rating");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("title");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AuthorUserId")
+                        .HasDatabaseName("ix_product_reviews_author_user_id");
+
+                    b.HasIndex("CreatedAtUtc")
+                        .HasDatabaseName("ix_product_reviews_created_at_utc");
+
+                    b.HasIndex("ProductId")
+                        .HasDatabaseName("ix_product_reviews_product_id");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_product_reviews_status");
+
+                    b.HasIndex("ProductId", "AuthorUserId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_product_reviews_product_author");
+
+                    b.ToTable("product_reviews", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_product_reviews_rating_range", "rating >= 1 AND rating <= 5");
+                        });
+                });
+
+            modelBuilder.Entity("BazaR.Backend.Domain.Reviews.SellerRatings.SellerRatingSummary", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("seller_id");
+
+                    b.Property<decimal>("AverageRating")
+                        .HasPrecision(4, 2)
+                        .HasColumnType("numeric(4,2)")
+                        .HasColumnName("average_rating");
+
+                    b.Property<int>("FiveStarsCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("five_stars_count");
+
+                    b.Property<int>("FourStarsCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("four_stars_count");
+
+                    b.Property<int>("OneStarCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("one_star_count");
+
+                    b.Property<int>("ReviewsCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("reviews_count");
+
+                    b.Property<int>("ThreeStarsCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("three_stars_count");
+
+                    b.Property<int>("TwoStarsCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("two_stars_count");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AverageRating")
+                        .HasDatabaseName("ix_seller_rating_summaries_average_rating");
+
+                    b.HasIndex("ReviewsCount")
+                        .HasDatabaseName("ix_seller_rating_summaries_reviews_count");
+
+                    b.ToTable("seller_rating_summaries", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_seller_rating_summaries_average_rating_range", "average_rating >= 0 AND average_rating <= 5");
+
+                            t.HasCheckConstraint("ck_seller_rating_summaries_five_stars_count_non_negative", "five_stars_count >= 0");
+
+                            t.HasCheckConstraint("ck_seller_rating_summaries_four_stars_count_non_negative", "four_stars_count >= 0");
+
+                            t.HasCheckConstraint("ck_seller_rating_summaries_one_star_count_non_negative", "one_star_count >= 0");
+
+                            t.HasCheckConstraint("ck_seller_rating_summaries_reviews_count_non_negative", "reviews_count >= 0");
+
+                            t.HasCheckConstraint("ck_seller_rating_summaries_three_stars_count_non_negative", "three_stars_count >= 0");
+
+                            t.HasCheckConstraint("ck_seller_rating_summaries_two_stars_count_non_negative", "two_stars_count >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("BazaR.Backend.Domain.Reviews.SellerReviews.SellerReview", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AuthorUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("author_user_id");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)")
+                        .HasColumnName("body");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<DateTime?>("ModeratedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("moderated_at_utc");
+
+                    b.Property<int>("Rating")
+                        .HasColumnType("integer")
+                        .HasColumnName("rating");
+
+                    b.Property<Guid>("SellerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("seller_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("title");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AuthorUserId")
+                        .HasDatabaseName("ix_seller_reviews_author_user_id");
+
+                    b.HasIndex("CreatedAtUtc")
+                        .HasDatabaseName("ix_seller_reviews_created_at_utc");
+
+                    b.HasIndex("SellerId")
+                        .HasDatabaseName("ix_seller_reviews_seller_id");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_seller_reviews_status");
+
+                    b.HasIndex("SellerId", "AuthorUserId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_seller_reviews_seller_author");
+
+                    b.ToTable("seller_reviews", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_seller_reviews_rating_range", "rating >= 1 AND rating <= 5");
+                        });
                 });
 
             modelBuilder.Entity("BazaR.Backend.Domain.Sales.Offer", b =>
@@ -1614,6 +1912,29 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
                         .HasForeignKey("product_id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.OwnsMany("BazaR.Backend.Domain.Catalog.Products.ProductAttributeValueOption", "OptionIds", b1 =>
+                        {
+                            b1.Property<Guid>("product_attribute_value_id")
+                                .HasColumnType("uuid");
+
+                            b1.Property<Guid>("OptionId")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("uuid")
+                                .HasColumnName("option_id");
+
+                            b1.HasKey("product_attribute_value_id", "OptionId");
+
+                            b1.HasIndex("OptionId")
+                                .HasDatabaseName("ix_pav_option_ids_option_id");
+
+                            b1.ToTable("product_attribute_value_option_ids", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("product_attribute_value_id");
+                        });
+
+                    b.Navigation("OptionIds");
                 });
 
             modelBuilder.Entity("BazaR.Backend.Domain.Catalog.Products.ProductImage", b =>
@@ -2410,6 +2731,72 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
 
                     b.Navigation("RefundedAmount")
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("BazaR.Backend.Domain.Reviews.ProductReviews.ProductReview", b =>
+                {
+                    b.OwnsMany("BazaR.Backend.Domain.Reviews.ReviewVote", "_votes", b1 =>
+                        {
+                            b1.Property<Guid>("product_review_id")
+                                .HasColumnType("uuid");
+
+                            b1.Property<Guid>("UserId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("user_id");
+
+                            b1.Property<DateTime>("CreatedAtUtc")
+                                .HasColumnType("timestamp with time zone")
+                                .HasColumnName("created_at_utc");
+
+                            b1.Property<bool>("IsHelpful")
+                                .HasColumnType("boolean")
+                                .HasColumnName("is_helpful");
+
+                            b1.HasKey("product_review_id", "UserId");
+
+                            b1.HasIndex("UserId")
+                                .HasDatabaseName("ix_product_review_votes_user_id");
+
+                            b1.ToTable("product_review_votes", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("product_review_id");
+                        });
+
+                    b.Navigation("_votes");
+                });
+
+            modelBuilder.Entity("BazaR.Backend.Domain.Reviews.SellerReviews.SellerReview", b =>
+                {
+                    b.OwnsMany("BazaR.Backend.Domain.Reviews.ReviewVote", "_votes", b1 =>
+                        {
+                            b1.Property<Guid>("seller_review_id")
+                                .HasColumnType("uuid");
+
+                            b1.Property<Guid>("UserId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("user_id");
+
+                            b1.Property<DateTime>("CreatedAtUtc")
+                                .HasColumnType("timestamp with time zone")
+                                .HasColumnName("created_at_utc");
+
+                            b1.Property<bool>("IsHelpful")
+                                .HasColumnType("boolean")
+                                .HasColumnName("is_helpful");
+
+                            b1.HasKey("seller_review_id", "UserId");
+
+                            b1.HasIndex("UserId")
+                                .HasDatabaseName("ix_seller_review_votes_user_id");
+
+                            b1.ToTable("seller_review_votes", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("seller_review_id");
+                        });
+
+                    b.Navigation("_votes");
                 });
 
             modelBuilder.Entity("BazaR.Backend.Domain.Sales.Offer", b =>

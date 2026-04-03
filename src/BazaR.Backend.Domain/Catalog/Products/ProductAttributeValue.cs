@@ -7,29 +7,24 @@ public sealed class ProductAttributeValue : Entity<Guid>
 {
     public AttributeId AttributeId { get; private set; }
 
-    // Типизированные значения (заполнено только одно в зависимости от AttributeDefinition.ValueType)
     public string? TextValue { get; private set; }
     public decimal? NumberValue { get; private set; }
     public bool? BoolValue { get; private set; }
     public Guid? OptionId { get; private set; }
 
-    private readonly List<Guid> _optionIds = new();
-    public IReadOnlyCollection<Guid> OptionIds => _optionIds.AsReadOnly();
+    private readonly List<ProductAttributeValueOption> _optionIds = new();
+    public IReadOnlyCollection<ProductAttributeValueOption> OptionIds => _optionIds.AsReadOnly();
 
     private ProductAttributeValue(Guid id, AttributeId attributeId) : base(id)
     {
         AttributeId = attributeId;
     }
 
-    private ProductAttributeValue() { } 
+    private ProductAttributeValue() { }
 
     public static ProductAttributeValue Create(AttributeId attributeId)
         => new(Guid.NewGuid(), attributeId);
 
-    /// <summary>
-    /// Устанавливает значение строго по правилам AttributeDefinition.
-    /// Тип НЕ хранится здесь, источник истины — def.ValueType.
-    /// </summary>
     public Result SetValue(
         AttributeDefinition def,
         string? text = null,
@@ -38,11 +33,9 @@ public sealed class ProductAttributeValue : Entity<Guid>
         Guid? optionId = null,
         IReadOnlyCollection<Guid>? optionIds = null)
     {
-
         if (!def.Id.Equals(AttributeId))
             return Result.Failure(ProductErrors.AttributeMismatch);
 
-        // 1) Валидируем через AttributeDefinition (там тип + options)
         Result validation = def.ValueType switch
         {
             AttributeValueType.Text => def.ValidateText(text),
@@ -56,7 +49,6 @@ public sealed class ProductAttributeValue : Entity<Guid>
         if (validation.IsFailure)
             return validation;
 
-        // 2) Сохраняем только нужное поле
         ClearAllValues();
 
         switch (def.ValueType)
@@ -78,7 +70,8 @@ public sealed class ProductAttributeValue : Entity<Guid>
                 break;
 
             case AttributeValueType.MultiSelect:
-                _optionIds.AddRange(optionIds!);
+                foreach (var id in optionIds!)
+                    _optionIds.Add(new ProductAttributeValueOption(id));
                 break;
         }
 

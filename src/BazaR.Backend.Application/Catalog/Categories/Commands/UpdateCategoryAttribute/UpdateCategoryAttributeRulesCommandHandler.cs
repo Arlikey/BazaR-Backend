@@ -30,17 +30,24 @@ public sealed class UpdateCategoryAttributeRulesCommandHandler
         if (category is null)
             return Result.Failure(CategoryErrors.NotFound);
 
-        // 1) rules
-        var res1 = category.UpdateAttributeRules(attributeId, request.IsRequired, request.IsFilterable);
+        var res1 = category.UpdateAttributeRules(
+            attributeId,
+            request.IsRequired,
+            request.IsFilterable,
+            request.FilterPresentationType);
         if (res1.IsFailure) return res1;
 
-        // 2) sort order
-        var res2 = category.SetAttributeSortOrder(attributeId, request.SortOrder);
+        var res2 = category.SetAttributeVisibility(
+            attributeId,
+            request.IsVisibleInSpecifications,
+            request.IsVisibleOnProductCard);
         if (res2.IsFailure) return res2;
 
-        // 3) section
-        var res3 = category.SetAttributeSection(attributeId, request.SectionName, request.SectionOrder);
+        var res3 = category.SetAttributeSortOrder(attributeId, request.SortOrder);
         if (res3.IsFailure) return res3;
+
+        var res4 = category.SetAttributeSection(attributeId, request.SectionName, request.SectionOrder);
+        if (res4.IsFailure) return res4;
 
         await _uow.SaveChangesAsync(ct);
         return Result.Success();

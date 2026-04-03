@@ -1,6 +1,5 @@
 ﻿using BazaR.Backend.Api.Contracts.Categories.Attributes;
 using BazaR.Backend.Application.Catalog.Categories.Commands.AttachAttribute;
-
 using BazaR.Backend.Application.Catalog.Categories.Commands.RemoveCategoryAttribute;
 using BazaR.Backend.Application.Catalog.Categories.Commands.UpdateCategoryAttribute;
 using BazaR.Backend.Domain.Common;
@@ -22,15 +21,20 @@ public sealed class AdminCategoryAttributesController : ControllerBase
         _mediator = mediator;
     }
 
-    // POST /api/v1/admin/catalog/categories/{categoryId}/attributes
     [HttpPost]
-    public async Task<IActionResult> Attach(Guid categoryId, [FromBody] AttachCategoryAttributeRequest request, CancellationToken ct)
+    public async Task<IActionResult> Attach(
+        Guid categoryId,
+        [FromBody] AttachCategoryAttributeRequest request,
+        CancellationToken ct)
     {
         var cmd = new AttachAttributeToCategoryCommand(
             CategoryId: categoryId,
             AttributeId: request.AttributeId,
             IsRequired: request.IsRequired,
             IsFilterable: request.IsFilterable,
+            FilterPresentationType: request.FilterPresentationType,
+            IsVisibleInSpecifications: request.IsVisibleInSpecifications,
+            IsVisibleOnProductCard: request.IsVisibleOnProductCard,
             SortOrder: request.SortOrder,
             SectionName: request.SectionName,
             SectionOrder: request.SectionOrder);
@@ -42,15 +46,21 @@ public sealed class AdminCategoryAttributesController : ControllerBase
         return NoContent();
     }
 
-    /*// PUT /api/v1/admin/catalog/categories/{categoryId}/attributes/{attributeId}
-    [HttpPut("{attributeId:guid}")]
-    public async Task<IActionResult> Update(Guid categoryId, Guid attributeId, [FromBody] UpdateCategoryAttributeRequest request, CancellationToken ct)
+    /*[HttpPut("{attributeId:guid}")]
+    public async Task<IActionResult> Update(
+        Guid categoryId,
+        Guid attributeId,
+        [FromBody] UpdateCategoryAttributeRequest request,
+        CancellationToken ct)
     {
-        var cmd = new UpdateCategoryAttributeCommand(
+        var cmd = new UpdateCategoryAttributeRulesCommand(
             CategoryId: categoryId,
             AttributeId: attributeId,
             IsRequired: request.IsRequired,
             IsFilterable: request.IsFilterable,
+            FilterPresentationType: request.FilterPresentationType,
+            IsVisibleInSpecifications: request.IsVisibleInSpecifications,
+            IsVisibleOnProductCard: request.IsVisibleOnProductCard,
             SortOrder: request.SortOrder,
             SectionName: request.SectionName,
             SectionOrder: request.SectionOrder);
@@ -62,9 +72,11 @@ public sealed class AdminCategoryAttributesController : ControllerBase
         return NoContent();
     }
 
-    // DELETE /api/v1/admin/catalog/categories/{categoryId}/attributes/{attributeId}
     [HttpDelete("{attributeId:guid}")]
-    public async Task<IActionResult> Remove(Guid categoryId, Guid attributeId, CancellationToken ct)
+    public async Task<IActionResult> Remove(
+        Guid categoryId,
+        Guid attributeId,
+        CancellationToken ct)
     {
         var cmd = new RemoveCategoryAttributeCommand(categoryId, attributeId);
 
@@ -82,13 +94,12 @@ public sealed class AdminCategoryAttributesController : ControllerBase
             "Category.NotFound" => StatusCodes.Status404NotFound,
             "Attribute.NotFound" => StatusCodes.Status404NotFound,
 
-            // дубликат привязки (если вернёшь отдельную ошибку)
             "CategoryAttribute.DuplicateAttributeInCategory" => StatusCodes.Status409Conflict,
 
-            // валидации sortOrder/sectionOrder
             "CategoryAttribute.SortOrderCannotBeNegative" => StatusCodes.Status400BadRequest,
             "CategoryAttribute.SectionOrderCannotBeNegative" => StatusCodes.Status400BadRequest,
             "CategoryAttribute.SectionNameTooLong" => StatusCodes.Status400BadRequest,
+            "CategoryAttribute.FilterPresentationType.NotAllowed" => StatusCodes.Status400BadRequest,
 
             _ => StatusCodes.Status400BadRequest
         };

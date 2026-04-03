@@ -21,8 +21,7 @@ public sealed class CategoryAttributeConfiguration : IEntityTypeConfiguration<Ca
             .ValueGeneratedNever()
             .HasConversion(
                 id => id.Value,
-                value => new CategoryAttributeId(value)
-            );
+                value => new CategoryAttributeId(value));
 
         // ======================
         // FK to Category (shadow property category_id)
@@ -31,8 +30,7 @@ public sealed class CategoryAttributeConfiguration : IEntityTypeConfiguration<Ca
             .HasColumnName("category_id")
             .HasConversion(
                 id => id.Value,
-                value => new CategoryId(value)
-            )
+                value => new CategoryId(value))
             .IsRequired();
 
         // ======================
@@ -42,8 +40,7 @@ public sealed class CategoryAttributeConfiguration : IEntityTypeConfiguration<Ca
             .HasColumnName("attribute_id")
             .HasConversion(
                 id => id.Value,
-                value => new AttributeId(value)
-            )
+                value => new AttributeId(value))
             .IsRequired();
 
         // ======================
@@ -57,11 +54,23 @@ public sealed class CategoryAttributeConfiguration : IEntityTypeConfiguration<Ca
             .HasColumnName("is_filterable")
             .IsRequired();
 
+        builder.Property(x => x.FilterPresentationType)
+            .HasColumnName("filter_presentation_type")
+            .HasConversion<string>()
+            .HasMaxLength(50);
+
+        builder.Property(x => x.IsVisibleInSpecifications)
+            .HasColumnName("is_visible_in_specifications")
+            .IsRequired();
+
+        builder.Property(x => x.IsVisibleOnProductCard)
+            .HasColumnName("is_visible_on_product_card")
+            .IsRequired();
+
         builder.Property(x => x.SortOrder)
             .HasColumnName("sort_order")
             .IsRequired();
 
-        
         builder.Property(x => x.SectionName)
             .HasColumnName("section_name")
             .HasMaxLength(100);
@@ -78,17 +87,35 @@ public sealed class CategoryAttributeConfiguration : IEntityTypeConfiguration<Ca
         builder.HasIndex(x => x.AttributeId)
             .HasDatabaseName("ix_category_attributes_attribute_id");
 
-        
         builder.HasIndex("category_id", nameof(CategoryAttribute.AttributeId))
-    .IsUnique()
-    .HasDatabaseName("ux_category_attributes_category_attribute");
+            .IsUnique()
+            .HasDatabaseName("ux_category_attributes_category_attribute");
 
+        builder.HasIndex(x => x.IsFilterable)
+            .HasDatabaseName("ix_category_attributes_is_filterable");
 
-       
+        builder.HasIndex(x => x.SectionOrder)
+            .HasDatabaseName("ix_category_attributes_section_order");
+
+        builder.HasIndex(x => x.SortOrder)
+            .HasDatabaseName("ix_category_attributes_sort_order");
+
+        // ======================
+        // Check constraints
+        // ======================
         builder.ToTable(t =>
         {
-            t.HasCheckConstraint("ck_category_attributes_sort_order_non_negative", "sort_order >= 0");
-            t.HasCheckConstraint("ck_category_attributes_section_order_non_negative", "section_order IS NULL OR section_order >= 0");
+            t.HasCheckConstraint(
+                "ck_category_attributes_sort_order_non_negative",
+                "sort_order >= 0");
+
+            t.HasCheckConstraint(
+                "ck_category_attributes_section_order_non_negative",
+                "section_order IS NULL OR section_order >= 0");
+
+            t.HasCheckConstraint(
+                "ck_category_attributes_filter_presentation_type_requires_filterable",
+                "filter_presentation_type IS NULL OR is_filterable = TRUE");
         });
     }
 }

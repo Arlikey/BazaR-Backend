@@ -9,6 +9,10 @@ using BazaR.Backend.Domain.Identity;
 using BazaR.Backend.Domain.Orders;
 using BazaR.Backend.Domain.PaymentProfiles;
 using BazaR.Backend.Domain.Payments;
+using BazaR.Backend.Domain.Reviews.ProductRatings;
+using BazaR.Backend.Domain.Reviews.ProductReviews;
+using BazaR.Backend.Domain.Reviews.SellerRatings;
+using BazaR.Backend.Domain.Reviews.SellerReviews;
 using BazaR.Backend.Domain.Sales;          
 using BazaR.Backend.Domain.Sellers;
 using BazaR.Backend.Domain.Shipping;
@@ -30,6 +34,11 @@ public sealed class AppDbContext : DbContext
     public DbSet<Brand> Brands => Set<Brand>();
     public DbSet<PaymentProfile> PaymentProfiles => Set<PaymentProfile>();
     public DbSet<PaymentMethodConfig> PaymentProfileMethods => Set<PaymentMethodConfig>();
+    public DbSet<ProductReview> ProductReviews => Set<ProductReview>();
+    public DbSet<SellerReview> SellerReviews => Set<SellerReview>();
+
+    public DbSet<ProductRatingSummary> ProductRatingSummaries => Set<ProductRatingSummary>();
+    public DbSet<SellerRatingSummary> SellerRatingSummaries => Set<SellerRatingSummary>();
 
     public DbSet<Favorite> Favorites => Set<Favorite>();
     public DbSet<User> Users => Set<User>();

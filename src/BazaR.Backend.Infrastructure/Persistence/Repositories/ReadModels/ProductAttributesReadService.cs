@@ -3,7 +3,6 @@ using BazaR.Backend.Domain.Catalog.Products;
 using BazaR.Backend.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-
 public sealed class ProductAttributesReadService : IProductAttributesReadService
 {
     private readonly AppDbContext _db;
@@ -17,10 +16,10 @@ public sealed class ProductAttributesReadService : IProductAttributesReadService
         ProductId productId,
         CancellationToken ct)
     {
-        // 1) Загружаем продукт с attribute values
         var product = await _db.Products
             .AsNoTracking()
             .Include(p => p.AttributeValues)
+                .ThenInclude(v => v.OptionIds)
             .SingleOrDefaultAsync(p => p.Id == productId, ct);
 
         if (product is null)
@@ -28,7 +27,6 @@ public sealed class ProductAttributesReadService : IProductAttributesReadService
 
         var categoryId = product.CategoryId;
 
-        // 2) Загружаем template категории
         var template = await _db.Categories
             .AsNoTracking()
             .Where(c => c.Id == categoryId)
@@ -38,6 +36,9 @@ public sealed class ProductAttributesReadService : IProductAttributesReadService
                 a.AttributeId,
                 a.IsRequired,
                 a.IsFilterable,
+                a.FilterPresentationType,
+                a.IsVisibleInSpecifications,
+                a.IsVisibleOnProductCard,
                 a.SortOrder,
                 a.SectionName,
                 a.SectionOrder
@@ -46,7 +47,6 @@ public sealed class ProductAttributesReadService : IProductAttributesReadService
 
         var attrIds = template.Select(x => x.AttributeId).Distinct().ToList();
 
-        // 3) Загружаем AttributeDefinitions + Options
         var defs = await _db.AttributeDefinitions
             .AsNoTracking()
             .Include(d => d.Options)
@@ -55,11 +55,9 @@ public sealed class ProductAttributesReadService : IProductAttributesReadService
 
         var defMap = defs.ToDictionary(d => d.Id, d => d);
 
-        // 4) Map ProductAttributeValues из агрегата
         var valueMap = product.AttributeValues
             .ToDictionary(v => v.AttributeId, v => v);
 
-        // 5) Compose DTO
         var items = template
             .OrderBy(x => x.SectionOrder ?? int.MaxValue)
             .ThenBy(x => x.SectionName)
@@ -86,7 +84,9 @@ public sealed class ProductAttributesReadService : IProductAttributesReadService
                     NumberValue: val?.NumberValue,
                     BoolValue: val?.BoolValue,
                     OptionId: val?.OptionId,
-                    OptionIds: val?.OptionIds?.ToList() ?? (IReadOnlyList<Guid>)Array.Empty<Guid>(),
+                    OptionIds: val is null
+                        ? Array.Empty<Guid>()
+                        : val.OptionIds.Select(x => x.OptionId).ToList(),
 
                     Options: def?.Options
                         .Select(o => new AttributeOptionDto(o.Id, o.Value))

@@ -34,6 +34,9 @@ public sealed class CategoryReadRepository : ICategoryReadRepository
                         a.AttributeId.Value,
                         a.IsRequired,
                         a.IsFilterable,
+                        a.FilterPresentationType,
+                        a.IsVisibleInSpecifications,
+                        a.IsVisibleOnProductCard,
                         a.SortOrder,
                         a.SectionName,
                         a.SectionOrder
@@ -120,6 +123,9 @@ public sealed class CategoryReadRepository : ICategoryReadRepository
                 a.AttributeId.Value,
                 a.IsRequired,
                 a.IsFilterable,
+                a.FilterPresentationType,
+                a.IsVisibleInSpecifications,
+                a.IsVisibleOnProductCard,
                 a.SortOrder,
                 a.SectionName,
                 a.SectionOrder

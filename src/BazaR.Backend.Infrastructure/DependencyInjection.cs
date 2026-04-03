@@ -6,12 +6,20 @@ using BazaR.Backend.Application.Abstractions.ReadModels;
 using BazaR.Backend.Application.Abstractions.Repositories;
 using BazaR.Backend.Application.Abstractions.Repositories.ReadModels;
 using BazaR.Backend.Application.Abstractions.Services;
+using BazaR.Backend.Application.Catalog.Browsing.Abstractions;
 using BazaR.Backend.Application.Catalog.Products.Services;
 using BazaR.Backend.Application.Checkouts;
 using BazaR.Backend.Application.Checkouts.Services;
 using BazaR.Backend.Application.Common.Abstractions;
 using BazaR.Backend.Application.Common.Abstractions.Security;
+using BazaR.Backend.Application.Reviews.ProductReviews.Abstractions;
+using BazaR.Backend.Application.Reviews.SellerReviews.Abstractions;
+using BazaR.Backend.Application.Reviews.Services;
 using BazaR.Backend.Domain.Repositories;
+using BazaR.Backend.Domain.Reviews.ProductRatings;
+using BazaR.Backend.Domain.Reviews.ProductReviews;
+using BazaR.Backend.Domain.Reviews.SellerRatings;
+using BazaR.Backend.Domain.Reviews.SellerReviews;
 using BazaR.Backend.Domain.Shippings;
 using BazaR.Backend.Infrastructure.Auth;
 using BazaR.Backend.Infrastructure.Integrations.NovaPoshta;
@@ -103,6 +111,21 @@ public static class DependencyInjection
         services.AddScoped<IBrandRepository, BrandRepository>();
         services.AddScoped<IBrandReadRepository, BrandReadRepository>();
 
+        services.AddScoped<ICatalogBrowseReadRepository, CatalogBrowseReadRepository>();
+
+
+        services.AddScoped<IProductReviewRepository, ProductReviewRepository>();
+        services.AddScoped<ISellerReviewRepository, SellerReviewRepository>();
+        services.AddScoped<IProductRatingSummaryRepository, ProductRatingSummaryRepository>();
+        services.AddScoped<ISellerRatingSummaryRepository, SellerRatingSummaryRepository>();
+        services.AddScoped<IProductReviewRatingReader, ProductReviewRatingReader>();
+        services.AddScoped<ISellerReviewRatingReader, SellerReviewRatingReader>();
+
+        services.AddScoped<ProductRatingSummaryUpdater>();
+        services.AddScoped<SellerRatingSummaryUpdater>();
+
+        services.AddScoped<IProductReviewReadRepository, ProductReviewReadRepository>();
+        services.AddScoped<ISellerReviewReadRepository, SellerReviewReadRepository>();
 
         services.AddScoped<IShippingRepository, ShippingRepository>();
         services.AddScoped<IShippingReadRepository, ShippingReadRepository>();

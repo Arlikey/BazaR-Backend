@@ -26,34 +26,30 @@ public sealed class AttachAttributeToCategoryCommandHandler
 
     public async Task<Result> Handle(AttachAttributeToCategoryCommand request, CancellationToken ct)
     {
-        // Приводим входные Guid к доменным идентификаторам
         var categoryId = new CategoryId(request.CategoryId);
         var attributeId = new AttributeId(request.AttributeId);
 
-        // Загружаем категорию вместе с уже привязанными атрибутами
-        // (нужно для проверки дублей/инвариантов внутри AddAttribute)
         var category = await _categories.GetByIdWithAttributesAsync(categoryId, ct);
         if (category is null)
             return Result.Failure(CategoryErrors.NotFound);
 
-        // Проверяем, что атрибут вообще существует
         if (!await _attributes.ExistsAsync(attributeId, ct))
             return Result.Failure(AttributeErrors.NotFound);
 
-        // Доменная операция: привязка атрибута к категории с настройками
         var res = category.AddAttribute(
             attributeId,
             request.IsRequired,
             request.IsFilterable,
+            request.FilterPresentationType,
+            request.IsVisibleInSpecifications,
+            request.IsVisibleOnProductCard,
             request.SortOrder,
             request.SectionName,
             request.SectionOrder);
 
-        // Если домен запретил операцию — возвращаем ошибку
         if (res.IsFailure)
             return res;
 
-        // Сохраняем изменения
         await _uow.SaveChangesAsync(ct);
 
         return Result.Success();

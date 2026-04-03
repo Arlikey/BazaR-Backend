@@ -1,4 +1,5 @@
 ﻿using BazaR.Backend.Domain.Catalog.Attributes;
+using BazaR.Backend.Domain.Categories;
 
 namespace BazaR.Backend.Application.Abstractions.ReadModels;
 
@@ -24,9 +25,13 @@ public sealed record CategoryAttributeTemplateItemDto(
     Guid AttributeId,
     bool IsRequired,
     bool IsFilterable,
+    FilterPresentationType? FilterPresentationType,
+    bool IsVisibleInSpecifications,
+    bool IsVisibleOnProductCard,
     int SortOrder,
     string? SectionName,
-    int? SectionOrder);
+    int? SectionOrder
+);
 
 // Для дерева (простая форма)
 public sealed record CategoryTreeNodeDto(

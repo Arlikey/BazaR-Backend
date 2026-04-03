@@ -11,7 +11,6 @@ public sealed class Category : AggregateRoot<CategoryId>
     private readonly List<CategoryAttribute> _attributes = new();
     public IReadOnlyCollection<CategoryAttribute> Attributes => _attributes.AsReadOnly();
 
-    // Image с backing field
     private CategoryImage? _image;
     public CategoryImage? Image => _image;
 
@@ -27,7 +26,7 @@ public sealed class Category : AggregateRoot<CategoryId>
         SortOrder = sortOrder;
     }
 
-    private Category() { } 
+    private Category() { }
 
     public static Result<Category> Create(string name, CategoryId? parentCategoryId = null, int sortOrder = 0)
     {
@@ -88,6 +87,9 @@ public sealed class Category : AggregateRoot<CategoryId>
         AttributeId attributeId,
         bool isRequired = false,
         bool isFilterable = false,
+        FilterPresentationType? filterPresentationType = null,
+        bool isVisibleInSpecifications = true,
+        bool isVisibleOnProductCard = false,
         int sortOrder = 0,
         string? sectionName = null,
         int? sectionOrder = null)
@@ -99,6 +101,9 @@ public sealed class Category : AggregateRoot<CategoryId>
             attributeId,
             isRequired,
             isFilterable,
+            filterPresentationType,
+            isVisibleInSpecifications,
+            isVisibleOnProductCard,
             sortOrder,
             sectionName,
             sectionOrder);
@@ -106,7 +111,7 @@ public sealed class Category : AggregateRoot<CategoryId>
         if (created.IsFailure)
             return Result.Failure(created.Error);
 
-        _attributes.Add(created.Value);
+        _attributes.Add(created.Value!);
         return Result.Success();
     }
 
@@ -120,13 +125,29 @@ public sealed class Category : AggregateRoot<CategoryId>
         return Result.Success();
     }
 
-    public Result UpdateAttributeRules(AttributeId attributeId, bool isRequired, bool isFilterable)
+    public Result UpdateAttributeRules(
+        AttributeId attributeId,
+        bool isRequired,
+        bool isFilterable,
+        FilterPresentationType? filterPresentationType)
     {
         var existing = _attributes.SingleOrDefault(x => x.AttributeId == attributeId);
         if (existing is null)
             return Result.Failure(CategoryErrors.NotFound);
 
-        return existing.UpdateRules(isRequired, isFilterable);
+        return existing.UpdateRules(isRequired, isFilterable, filterPresentationType);
+    }
+
+    public Result SetAttributeVisibility(
+        AttributeId attributeId,
+        bool isVisibleInSpecifications,
+        bool isVisibleOnProductCard)
+    {
+        var existing = _attributes.SingleOrDefault(x => x.AttributeId == attributeId);
+        if (existing is null)
+            return Result.Failure(CategoryErrors.NotFound);
+
+        return existing.SetVisibility(isVisibleInSpecifications, isVisibleOnProductCard);
     }
 
     public Result SetAttributeSortOrder(AttributeId attributeId, int sortOrder)
@@ -165,8 +186,6 @@ public sealed class Category : AggregateRoot<CategoryId>
         {
             _image.Replace(url, storageKey, contentType, sizeBytes, now);
         }
-
-        
 
         return Result.Success();
     }

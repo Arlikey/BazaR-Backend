@@ -48,7 +48,7 @@ public sealed class CartReadRepository : ICartReadRepository
                         .ThenBy(img => img.SortOrder)
                         .Select(img => img.Url)
                         .FirstOrDefault()
-                    orderby i.UpdatedAt descending
+                    orderby i.AddedAt descending   
                     select new CustomerCartItemDto(
                         i.OfferId.Value,
                         p.Name,
@@ -96,7 +96,7 @@ public sealed class CartReadRepository : ICartReadRepository
 
                 Items = _db.Set<CartItem>()
                     .Where(i => i.CartId == c.Id)
-                    .OrderByDescending(i => i.UpdatedAt)
+                    .OrderByDescending(i => i.AddedAt)   
                     .Select(i => new CartItemReadModel
                     {
                         OfferId = i.OfferId.Value,
