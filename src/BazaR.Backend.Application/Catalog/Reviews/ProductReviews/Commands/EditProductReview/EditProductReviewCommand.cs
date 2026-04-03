@@ -7,5 +7,6 @@ public sealed record EditProductReviewCommand(
     Guid ReviewId,
     Guid AuthorUserId,
     int? Rating,
-    string? Title,
+    string? Advantages,
+    string? Disadvantages,
     string? Body) : IRequest<Result>;

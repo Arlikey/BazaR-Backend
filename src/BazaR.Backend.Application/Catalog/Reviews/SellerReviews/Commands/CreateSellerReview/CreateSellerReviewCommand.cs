@@ -7,5 +7,6 @@ public sealed record CreateSellerReviewCommand(
     Guid SellerId,
     Guid AuthorUserId,
     int Rating,
-    string Title,
-    string Body) : IRequest<Result<Guid>>;
+    string? Advantages,
+    string? Disadvantages,
+    string? Body) : IRequest<Result<Guid>>;

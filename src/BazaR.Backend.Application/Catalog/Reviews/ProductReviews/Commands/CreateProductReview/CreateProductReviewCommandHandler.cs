@@ -39,7 +39,8 @@ public sealed class CreateProductReviewCommandHandler
             productId,
             authorUserId,
             request.Rating,
-            request.Title,
+            request.Advantages,
+            request.Disadvantages,
             request.Body);
 
         if (created.IsFailure)
@@ -47,6 +48,8 @@ public sealed class CreateProductReviewCommandHandler
 
         var review = created.Value!;
         await _reviews.AddAsync(review, ct);
+
+        await _uow.SaveChangesAsync(ct);
 
         var updateSummary = await _summaryUpdater.UpdateAsync(productId, ct);
         if (updateSummary.IsFailure)

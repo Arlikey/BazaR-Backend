@@ -7,7 +7,8 @@ namespace BazaR.Backend.Domain.Reviews.ProductReviews;
 
 public sealed class ProductReview : AggregateRoot<ProductReviewId>
 {
-    private const int MaxTitleLength = 200;
+    private const int MaxAdvantagesLength = 2000;
+    private const int MaxDisadvantagesLength = 2000;
     private const int MaxBodyLength = 4000;
 
     private readonly List<ReviewVote> _votes = new();
@@ -15,8 +16,11 @@ public sealed class ProductReview : AggregateRoot<ProductReviewId>
     public ProductId ProductId { get; private set; }
     public UserId AuthorUserId { get; private set; }
     public ReviewRating Rating { get; private set; }
-    public string Title { get; private set; } = default!;
-    public string Body { get; private set; } = default!;
+
+    public string? Advantages { get; private set; }
+    public string? Disadvantages { get; private set; }
+    public string? Body { get; private set; }
+
     public ReviewStatus Status { get; private set; }
 
     public DateTime CreatedAtUtc { get; private set; }
@@ -35,14 +39,16 @@ public sealed class ProductReview : AggregateRoot<ProductReviewId>
         ProductId productId,
         UserId authorUserId,
         ReviewRating rating,
-        string title,
-        string body)
+        string? advantages,
+        string? disadvantages,
+        string? body)
         : base(id)
     {
         ProductId = productId;
         AuthorUserId = authorUserId;
         Rating = rating;
-        Title = title;
+        Advantages = advantages;
+        Disadvantages = disadvantages;
         Body = body;
         Status = ReviewStatus.Pending;
         CreatedAtUtc = DateTime.UtcNow;
@@ -53,8 +59,9 @@ public sealed class ProductReview : AggregateRoot<ProductReviewId>
         ProductId productId,
         UserId authorUserId,
         int rating,
-        string title,
-        string body)
+        string? advantages,
+        string? disadvantages,
+        string? body)
     {
         if (productId == default)
             return Result<ProductReview>.Failure(ReviewErrors.ProductRequired);
@@ -66,26 +73,25 @@ public sealed class ProductReview : AggregateRoot<ProductReviewId>
         if (ratingResult.IsFailure)
             return Result<ProductReview>.Failure(ratingResult.Error);
 
-        var normalizedTitle = NormalizeTitle(title);
-        if (normalizedTitle is null)
-            return Result<ProductReview>.Failure(ReviewErrors.TitleRequired);
+        var normalizedAdvantages = NormalizeOptional(advantages);
+        var normalizedDisadvantages = NormalizeOptional(disadvantages);
+        var normalizedBody = NormalizeOptional(body);
 
-        if (normalizedTitle.Length > MaxTitleLength)
-            return Result<ProductReview>.Failure(ReviewErrors.TitleTooLong);
+        var contentValidation = ValidateContent(
+            normalizedAdvantages,
+            normalizedDisadvantages,
+            normalizedBody);
 
-        var normalizedBody = NormalizeBody(body);
-        if (normalizedBody is null)
-            return Result<ProductReview>.Failure(ReviewErrors.BodyRequired);
-
-        if (normalizedBody.Length > MaxBodyLength)
-            return Result<ProductReview>.Failure(ReviewErrors.BodyTooLong);
+        if (contentValidation.IsFailure)
+            return Result<ProductReview>.Failure(contentValidation.Error);
 
         var review = new ProductReview(
             ProductReviewId.New(),
             productId,
             authorUserId,
             ratingResult.Value!,
-            normalizedTitle,
+            normalizedAdvantages,
+            normalizedDisadvantages,
             normalizedBody);
 
         review.AddDomainEvent(new ProductReviewCreatedEvent(
@@ -96,35 +102,34 @@ public sealed class ProductReview : AggregateRoot<ProductReviewId>
         return Result<ProductReview>.Success(review);
     }
 
-    public Result Edit(int rating, string title, string body)
+    public Result Edit(
+        int rating,
+        string? advantages,
+        string? disadvantages,
+        string? body)
     {
-        if (Status == ReviewStatus.Deleted)
-            return Result.Failure(ReviewErrors.CannotEditDeleted);
-
         var ratingResult = ReviewRating.Create(rating);
         if (ratingResult.IsFailure)
             return Result.Failure(ratingResult.Error);
 
-        var normalizedTitle = NormalizeTitle(title);
-        if (normalizedTitle is null)
-            return Result.Failure(ReviewErrors.TitleRequired);
+        var normalizedAdvantages = NormalizeOptional(advantages);
+        var normalizedDisadvantages = NormalizeOptional(disadvantages);
+        var normalizedBody = NormalizeOptional(body);
 
-        if (normalizedTitle.Length > MaxTitleLength)
-            return Result.Failure(ReviewErrors.TitleTooLong);
+        var contentValidation = ValidateContent(
+            normalizedAdvantages,
+            normalizedDisadvantages,
+            normalizedBody);
 
-        var normalizedBody = NormalizeBody(body);
-        if (normalizedBody is null)
-            return Result.Failure(ReviewErrors.BodyRequired);
-
-        if (normalizedBody.Length > MaxBodyLength)
-            return Result.Failure(ReviewErrors.BodyTooLong);
+        if (contentValidation.IsFailure)
+            return contentValidation;
 
         Rating = ratingResult.Value!;
-        Title = normalizedTitle;
+        Advantages = normalizedAdvantages;
+        Disadvantages = normalizedDisadvantages;
         Body = normalizedBody;
         UpdatedAtUtc = DateTime.UtcNow;
 
-        // после редактирования обычно отзыв снова уходит на модерацию
         Status = ReviewStatus.Pending;
         ModeratedAtUtc = null;
 
@@ -136,43 +141,8 @@ public sealed class ProductReview : AggregateRoot<ProductReviewId>
         return Result.Success();
     }
 
-    public Result DeleteByUser()
-    {
-        if (Status == ReviewStatus.Deleted)
-            return Result.Failure(ReviewErrors.AlreadyDeleted);
-
-        Status = ReviewStatus.Deleted;
-        UpdatedAtUtc = DateTime.UtcNow;
-
-        AddDomainEvent(new ProductReviewDeletedByUserEvent(
-            Id,
-            ProductId,
-            AuthorUserId));
-
-        return Result.Success();
-    }
-
-    public Result DeleteByAdmin()
-    {
-        if (Status == ReviewStatus.Deleted)
-            return Result.Failure(ReviewErrors.AlreadyDeleted);
-
-        Status = ReviewStatus.Deleted;
-        UpdatedAtUtc = DateTime.UtcNow;
-
-        AddDomainEvent(new ProductReviewDeletedByAdminEvent(
-            Id,
-            ProductId,
-            AuthorUserId));
-
-        return Result.Success();
-    }
-
     public Result Approve()
     {
-        if (Status == ReviewStatus.Deleted)
-            return Result.Failure(ReviewErrors.CannotModerateDeleted);
-
         Status = ReviewStatus.Approved;
         ModeratedAtUtc = DateTime.UtcNow;
         UpdatedAtUtc = ModeratedAtUtc.Value;
@@ -187,9 +157,6 @@ public sealed class ProductReview : AggregateRoot<ProductReviewId>
 
     public Result Reject()
     {
-        if (Status == ReviewStatus.Deleted)
-            return Result.Failure(ReviewErrors.CannotModerateDeleted);
-
         Status = ReviewStatus.Rejected;
         ModeratedAtUtc = DateTime.UtcNow;
         UpdatedAtUtc = ModeratedAtUtc.Value;
@@ -204,9 +171,6 @@ public sealed class ProductReview : AggregateRoot<ProductReviewId>
 
     public Result Vote(UserId userId, bool isHelpful)
     {
-        if (Status == ReviewStatus.Deleted)
-            return Result.Failure(ReviewErrors.CannotVoteDeleted);
-
         if (userId == default)
             return Result.Failure(ReviewErrors.AuthorRequired);
 
@@ -238,9 +202,42 @@ public sealed class ProductReview : AggregateRoot<ProductReviewId>
         return Result.Success();
     }
 
-    private static string? NormalizeTitle(string? value)
+    private static string? NormalizeOptional(string? value)
         => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
-    private static string? NormalizeBody(string? value)
-        => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    private static Result ValidateContent(
+        string? advantages,
+        string? disadvantages,
+        string? body)
+    {
+        if (advantages is null && disadvantages is null && body is null)
+        {
+            return Result.Failure(new Error(
+                "Review.Content.Required",
+                "At least one of advantages, disadvantages or body must be provided."));
+        }
+
+        if (advantages is not null && advantages.Length > MaxAdvantagesLength)
+        {
+            return Result.Failure(new Error(
+                "Review.Advantages.TooLong",
+                $"Advantages must not exceed {MaxAdvantagesLength} characters."));
+        }
+
+        if (disadvantages is not null && disadvantages.Length > MaxDisadvantagesLength)
+        {
+            return Result.Failure(new Error(
+                "Review.Disadvantages.TooLong",
+                $"Disadvantages must not exceed {MaxDisadvantagesLength} characters."));
+        }
+
+        if (body is not null && body.Length > MaxBodyLength)
+        {
+            return Result.Failure(new Error(
+                "Review.Body.TooLong",
+                $"Body must not exceed {MaxBodyLength} characters."));
+        }
+
+        return Result.Success();
+    }
 }

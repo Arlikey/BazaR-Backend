@@ -1,5 +1,4 @@
 ﻿using BazaR.Backend.Application.Abstractions.Persistence;
-
 using BazaR.Backend.Application.Reviews.Services;
 using BazaR.Backend.Domain.Common;
 using BazaR.Backend.Domain.Reviews;
@@ -40,7 +39,8 @@ public sealed class CreateSellerReviewCommandHandler
             sellerId,
             authorUserId,
             request.Rating,
-            request.Title,
+            request.Advantages,
+            request.Disadvantages,
             request.Body);
 
         if (created.IsFailure)
@@ -48,6 +48,8 @@ public sealed class CreateSellerReviewCommandHandler
 
         var review = created.Value!;
         await _reviews.AddAsync(review, ct);
+
+        await _uow.SaveChangesAsync(ct);
 
         var updateSummary = await _summaryUpdater.UpdateAsync(sellerId, ct);
         if (updateSummary.IsFailure)

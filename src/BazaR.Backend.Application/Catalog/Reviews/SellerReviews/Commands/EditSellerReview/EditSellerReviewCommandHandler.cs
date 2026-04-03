@@ -39,7 +39,10 @@ public sealed class EditSellerReviewCommandHandler
                 "You can edit only your own review."));
         }
 
-        if (request.Rating is null && request.Title is null && request.Body is null)
+        if (request.Rating is null &&
+            request.Advantages is null &&
+            request.Disadvantages is null &&
+            request.Body is null)
         {
             return Result.Failure(new Error(
                 "SellerReview.Edit.Empty",
@@ -47,10 +50,16 @@ public sealed class EditSellerReviewCommandHandler
         }
 
         var newRating = request.Rating ?? review.Rating.Value;
-        var newTitle = request.Title ?? review.Title;
+        var newAdvantages = request.Advantages ?? review.Advantages;
+        var newDisadvantages = request.Disadvantages ?? review.Disadvantages;
         var newBody = request.Body ?? review.Body;
 
-        var result = review.Edit(newRating, newTitle, newBody);
+        var result = review.Edit(
+            newRating,
+            newAdvantages,
+            newDisadvantages,
+            newBody);
+
         if (result.IsFailure)
             return result;
 

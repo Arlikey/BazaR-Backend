@@ -1,12 +1,10 @@
 ﻿using BazaR.Backend.Api.Contracts.Reviews;
 using BazaR.Backend.Api.Contracts.Reviews.SellerReviews;
-
 using BazaR.Backend.Application.Catalog.Reviews.SellerReviews.Commands.CreateSellerReview;
 using BazaR.Backend.Application.Catalog.Reviews.SellerReviews.Commands.DeleteSellerReviewByUser;
 using BazaR.Backend.Application.Catalog.Reviews.SellerReviews.Commands.EditSellerReview;
 using BazaR.Backend.Application.Catalog.Reviews.SellerReviews.Commands.VoteSellerReview;
 using BazaR.Backend.Application.Common.Abstractions;
-
 using BazaR.Backend.Domain.Common;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -38,7 +36,8 @@ public sealed class CustomerSellerReviewsController : ControllerBase
                 request.SellerId,
                 _currentUser.UserId,
                 request.Rating,
-                request.Title,
+                request.Advantages,
+                request.Disadvantages,
                 request.Body),
             ct);
 
@@ -59,7 +58,8 @@ public sealed class CustomerSellerReviewsController : ControllerBase
                 reviewId,
                 _currentUser.UserId,
                 request.Rating,
-                request.Title,
+                request.Advantages,
+                request.Disadvantages,
                 request.Body),
             ct);
 
@@ -111,6 +111,8 @@ public sealed class CustomerSellerReviewsController : ControllerBase
             "SellerReview.Duplicate" => StatusCodes.Status409Conflict,
             "SellerReview.Forbidden" => StatusCodes.Status403Forbidden,
             "Review.Vote.OwnReview" => StatusCodes.Status400BadRequest,
+            "SellerReview.Edit.Empty" => StatusCodes.Status400BadRequest,
+            "Review.Content.Required" => StatusCodes.Status400BadRequest,
             _ => StatusCodes.Status400BadRequest
         };
 

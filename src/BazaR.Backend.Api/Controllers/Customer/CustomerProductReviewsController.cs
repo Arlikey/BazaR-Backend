@@ -1,5 +1,4 @@
 ﻿using BazaR.Backend.Api.Contracts.Reviews;
-
 using BazaR.Backend.Application.Catalog.Reviews.ProductReviews.Commands.CreateProductReview;
 using BazaR.Backend.Application.Catalog.Reviews.ProductReviews.Commands.DeleteProductReviewByUser;
 using BazaR.Backend.Application.Catalog.Reviews.ProductReviews.Commands.EditProductReview;
@@ -36,7 +35,8 @@ public sealed class CustomerProductReviewsController : ControllerBase
                 request.ProductId,
                 _currentUser.UserId,
                 request.Rating,
-                request.Title,
+                request.Advantages,
+                request.Disadvantages,
                 request.Body),
             ct);
 
@@ -57,7 +57,8 @@ public sealed class CustomerProductReviewsController : ControllerBase
                 reviewId,
                 _currentUser.UserId,
                 request.Rating,
-                request.Title,
+                request.Advantages,
+                request.Disadvantages,
                 request.Body),
             ct);
 
@@ -109,6 +110,8 @@ public sealed class CustomerProductReviewsController : ControllerBase
             "ProductReview.Duplicate" => StatusCodes.Status409Conflict,
             "ProductReview.Forbidden" => StatusCodes.Status403Forbidden,
             "Review.Vote.OwnReview" => StatusCodes.Status400BadRequest,
+            "ProductReview.Edit.Empty" => StatusCodes.Status400BadRequest,
+            "Review.Content.Required" => StatusCodes.Status400BadRequest,
             _ => StatusCodes.Status400BadRequest
         };
 

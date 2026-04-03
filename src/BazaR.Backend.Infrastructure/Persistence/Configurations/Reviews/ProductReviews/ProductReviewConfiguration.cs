@@ -37,16 +37,19 @@ public sealed class ProductReviewConfiguration : IEntityTypeConfiguration<Produc
             .IsRequired();
 
         builder.Property(x => x.Rating)
-        .HasColumnName("rating")
-        .HasConversion(
-            rating => rating.Value,
-            value => ReviewRating.Create(value).Value!)
-        .IsRequired();
-
-        builder.Property(x => x.Title)
-            .HasColumnName("title")
-            .HasMaxLength(200)
+            .HasColumnName("rating")
+            .HasConversion(
+                rating => rating.Value,
+                value => ReviewRating.Create(value).Value!)
             .IsRequired();
+
+        builder.Property(x => x.Advantages)
+            .HasColumnName("advantages")
+            .HasMaxLength(1000);
+
+        builder.Property(x => x.Disadvantages)
+            .HasColumnName("disadvantages")
+            .HasMaxLength(1000);
 
         builder.Property(x => x.Body)
             .HasColumnName("body")
