@@ -5,6 +5,7 @@ namespace BazaR.Backend.Domain.Catalog.Products;
 
 public sealed class ProductAttributeValue : Entity<Guid>
 {
+    public ProductId ProductId { get; private set; }          // добавлено
     public AttributeId AttributeId { get; private set; }
 
     public string? TextValue { get; private set; }
@@ -15,15 +16,16 @@ public sealed class ProductAttributeValue : Entity<Guid>
     private readonly List<ProductAttributeValueOption> _optionIds = new();
     public IReadOnlyCollection<ProductAttributeValueOption> OptionIds => _optionIds.AsReadOnly();
 
-    private ProductAttributeValue(Guid id, AttributeId attributeId) : base(id)
+    private ProductAttributeValue(Guid id, ProductId productId, AttributeId attributeId) : base(id)
     {
+        ProductId = productId;
         AttributeId = attributeId;
     }
 
-    private ProductAttributeValue() { }
+    private ProductAttributeValue() { } // для EF
 
-    public static ProductAttributeValue Create(AttributeId attributeId)
-        => new(Guid.NewGuid(), attributeId);
+    public static ProductAttributeValue Create(ProductId productId, AttributeId attributeId)
+        => new(Guid.NewGuid(), productId, attributeId);
 
     public Result SetValue(
         AttributeDefinition def,
@@ -70,8 +72,8 @@ public sealed class ProductAttributeValue : Entity<Guid>
                 break;
 
             case AttributeValueType.MultiSelect:
-                foreach (var id in optionIds!)
-                    _optionIds.Add(new ProductAttributeValueOption(id));
+                foreach (var id in optionIds!.Distinct())
+                    _optionIds.Add(ProductAttributeValueOption.Create(id));
                 break;
         }
 

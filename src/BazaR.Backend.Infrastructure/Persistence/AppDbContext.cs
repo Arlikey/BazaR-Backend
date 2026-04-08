@@ -36,6 +36,9 @@ public sealed class AppDbContext : DbContext
     public DbSet<PaymentMethodConfig> PaymentProfileMethods => Set<PaymentMethodConfig>();
     public DbSet<ProductReview> ProductReviews => Set<ProductReview>();
     public DbSet<SellerReview> SellerReviews => Set<SellerReview>();
+    public DbSet<ProductAttributeValue> ProductAttributeValues => Set<ProductAttributeValue>();
+    public DbSet<ProductAttributeValueOption> ProductAttributeValueOptions => Set<ProductAttributeValueOption>();
+
 
     public DbSet<ProductRatingSummary> ProductRatingSummaries => Set<ProductRatingSummary>();
     public DbSet<SellerRatingSummary> SellerRatingSummaries => Set<SellerRatingSummary>();

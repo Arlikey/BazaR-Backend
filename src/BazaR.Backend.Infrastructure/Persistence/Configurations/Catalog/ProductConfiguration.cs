@@ -145,16 +145,16 @@ public sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
         // AttributeValues (collection)
         // =========================
         b.HasMany(x => x.AttributeValues)
-            .WithOne()
-            .HasForeignKey("product_id")
-            .OnDelete(DeleteBehavior.Cascade);
+    .WithOne()
+    .HasForeignKey(av => av.ProductId)  
+    .OnDelete(DeleteBehavior.Cascade);
 
         var attrNav = b.Metadata.FindNavigation(nameof(Product.AttributeValues))!;
         attrNav.SetPropertyAccessMode(PropertyAccessMode.Field);
         attrNav.SetField("_attributeValues");
 
         // =========================
-        // Images (collection) – НОВОЕ
+        // Images (collection)
         // =========================
         b.HasMany(x => x.Images)
             .WithOne()

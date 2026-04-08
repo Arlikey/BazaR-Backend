@@ -1,13 +1,18 @@
-﻿namespace BazaR.Backend.Domain.Catalog.Products;
+﻿using BazaR.Backend.Domain.Common;
 
-public sealed class ProductAttributeValueOption
+namespace BazaR.Backend.Domain.Catalog.Products;
+
+public sealed class ProductAttributeValueOption : Entity<Guid>
 {
     public Guid OptionId { get; private set; }
 
     private ProductAttributeValueOption() { }
 
-    internal ProductAttributeValueOption(Guid optionId)
+    private ProductAttributeValueOption(Guid id, Guid optionId) : base(id)
     {
         OptionId = optionId;
     }
+
+    public static ProductAttributeValueOption Create(Guid optionId)
+        => new(Guid.NewGuid(), optionId);
 }

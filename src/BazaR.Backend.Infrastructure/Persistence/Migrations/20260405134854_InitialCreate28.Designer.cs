@@ -3,6 +3,7 @@ using System;
 using BazaR.Backend.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BazaR.Backend.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260405134854_InitialCreate28")]
+    partial class InitialCreate28
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -249,24 +252,24 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("option_id");
 
-                    b.Property<Guid>("ProductId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("product_id");
-
                     b.Property<string>("TextValue")
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)")
                         .HasColumnName("text_value");
+
+                    b.Property<Guid>("product_id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("product_id");
 
                     b.HasKey("Id");
 
                     b.HasIndex("AttributeId")
                         .HasDatabaseName("ix_product_attribute_values_attribute_id");
 
-                    b.HasIndex("ProductId")
+                    b.HasIndex("product_id")
                         .HasDatabaseName("ix_product_attribute_values_product_id");
 
-                    b.HasIndex("ProductId", "AttributeId")
+                    b.HasIndex("product_id", "AttributeId")
                         .IsUnique()
                         .HasDatabaseName("ux_product_attribute_values_product_attribute");
 
@@ -1946,7 +1949,7 @@ namespace BazaR.Backend.Infrastructure.Persistence.Migrations
                 {
                     b.HasOne("BazaR.Backend.Domain.Catalog.Products.Product", null)
                         .WithMany("AttributeValues")
-                        .HasForeignKey("ProductId")
+                        .HasForeignKey("product_id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

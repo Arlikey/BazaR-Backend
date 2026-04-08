@@ -386,7 +386,7 @@ public sealed class Product : AggregateRoot<ProductId>
         var existing = _attributeValues.SingleOrDefault(x => x.AttributeId == def.Id);
         if (existing is null)
         {
-            existing = ProductAttributeValue.Create(def.Id);
+            existing = ProductAttributeValue.Create(this.Id, def.Id);
             _attributeValues.Add(existing);
         }
 

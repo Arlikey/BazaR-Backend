@@ -7,6 +7,7 @@ using BazaR.Backend.Application.Abstractions.Repositories;
 using BazaR.Backend.Application.Abstractions.Repositories.ReadModels;
 using BazaR.Backend.Application.Abstractions.Services;
 using BazaR.Backend.Application.Catalog.Browsing.Abstractions;
+using BazaR.Backend.Application.Catalog.Browsing.Sidebar.Abstractions;
 using BazaR.Backend.Application.Catalog.Products.Services;
 using BazaR.Backend.Application.Checkouts;
 using BazaR.Backend.Application.Checkouts.Services;
@@ -112,7 +113,8 @@ public static class DependencyInjection
         services.AddScoped<IBrandReadRepository, BrandReadRepository>();
 
         services.AddScoped<ICatalogBrowseReadRepository, CatalogBrowseReadRepository>();
-
+        services.AddScoped<ICatalogSidebarReadRepository, CatalogSidebarReadRepository>();
+        services.AddScoped<ProductOfferAttacher>();
 
         services.AddScoped<IProductReviewRepository, ProductReviewRepository>();
         services.AddScoped<ISellerReviewRepository, SellerReviewRepository>();

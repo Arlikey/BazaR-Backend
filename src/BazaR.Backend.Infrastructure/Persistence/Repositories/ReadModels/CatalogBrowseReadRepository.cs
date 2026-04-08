@@ -1,10 +1,16 @@
-﻿using BazaR.Backend.Application.Catalog.Browsing.Abstractions;
+﻿using BazaR.Backend.Application.Abstractions.ReadModels;
+using BazaR.Backend.Application.Catalog.Browsing.Abstractions;
 using BazaR.Backend.Application.Catalog.Browsing.DTOs;
+using BazaR.Backend.Application.Sellers.DTOs;
+using BazaR.Backend.Domain.Brands;
 using BazaR.Backend.Domain.Catalog.Attributes;
 using BazaR.Backend.Domain.Catalog.Products;
 using BazaR.Backend.Domain.Categories;
+using BazaR.Backend.Domain.Sales;
+using BazaR.Backend.Domain.Sellers;
 using BazaR.Backend.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 
 namespace BazaR.Backend.Infrastructure.Repositories;
 
@@ -17,472 +23,398 @@ public sealed class CatalogBrowseReadRepository : ICatalogBrowseReadRepository
         _db = db;
     }
 
-    public async Task<CategoryCatalogSidebarDto> GetCategorySidebarAsync(
+    public async Task<PagedResult<ProductCardDto>> BrowseCategoryProductsAsync(
         Guid categoryId,
+        IReadOnlyCollection<CatalogSelectedFilterDto> filters,
+        CatalogSystemFiltersDto? systemFilters,
+        int page,
+        int pageSize,
+        string? sortBy,
         CancellationToken ct = default)
     {
-        var categoryAttributes = await LoadFilterableCategoryAttributeMetasAsync(categoryId, ct);
+        Console.WriteLine($"\n=== BrowseCategoryProductsAsync START ===");
+        Console.WriteLine($"CategoryId: {categoryId}");
+        Console.WriteLine($"Attribute filters count: {filters?.Count ?? 0}");
+        Console.WriteLine($"System filters: BrandIds={systemFilters?.BrandIds.Count ?? 0}, SellerGroups={systemFilters?.SellerGroups.Count ?? 0}, PriceMin={systemFilters?.PriceMin}, PriceMax={systemFilters?.PriceMax}");
+        Console.WriteLine($"Page: {page}, PageSize: {pageSize}, SortBy: {sortBy ?? "null"}");
 
-        if (categoryAttributes.Count == 0)
+        if (page <= 0) page = 1;
+        if (pageSize <= 0) pageSize = 20;
+        if (pageSize > 100) pageSize = 100;
+
+        IQueryable<Product> query = _db.Products
+            .AsNoTracking()
+            .Where(x => x.CategoryId == new CategoryId(categoryId))
+            .Where(x => x.Status == ProductStatus.Published);
+
+        Console.WriteLine("Base query built (category + published).");
+
+        var filteredProductIds = await GetFilteredProductIdsAsync(filters, systemFilters, ct);
+        Console.WriteLine($"FilteredProductIds count: {filteredProductIds.Count}");
+
+        var hasAttributeFilters = filters is not null && filters.Count > 0;
+        var hasSystemFilters =
+            systemFilters is not null &&
+            (
+                systemFilters.BrandIds.Count > 0 ||
+                systemFilters.SellerGroups.Count > 0 ||
+                systemFilters.PriceMin.HasValue ||
+                systemFilters.PriceMax.HasValue
+            );
+
+        if (hasAttributeFilters || hasSystemFilters)
         {
-            return new CategoryCatalogSidebarDto
+            if (filteredProductIds.Count == 0)
             {
-                CategoryId = categoryId,
-                Facets = []
-            };
+                Console.WriteLine("No products after filtering, returning empty result.");
+                return new PagedResult<ProductCardDto>(
+                    Array.Empty<ProductCardDto>(),
+                    0,
+                    page,
+                    pageSize);
+            }
+
+            var productIds = filteredProductIds
+                .Select(g => new ProductId(g))
+                .ToList();
+
+            query = query.Where(x => productIds.Contains(x.Id));
+            Console.WriteLine($"Applied filter on query, remaining products: {filteredProductIds.Count}");
         }
 
-        var attributeIds = categoryAttributes
-            .Select(x => x.AttributeId)
+        query = ApplySorting(query, sortBy);
+
+        var totalCount = await query.CountAsync(ct);
+        Console.WriteLine($"Total count after sorting: {totalCount}");
+
+        var items = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(x => new ProductCardDto(
+                x.Id.Value,
+                x.Name,
+                x.Slug != null ? x.Slug.Value : null,
+                x.Description,
+                x.Images
+                    .OrderByDescending(i => i.IsMain)
+                    .ThenBy(i => i.SortOrder)
+                    .Select(i => i.Url)
+                    .FirstOrDefault()
+            ))
+            .ToListAsync(ct);
+
+        Console.WriteLine($"Returning {items.Count} items out of {totalCount}");
+        Console.WriteLine($"=== BrowseCategoryProductsAsync END ===\n");
+
+        return new PagedResult<ProductCardDto>(items, totalCount, page, pageSize);
+    }
+
+    private async Task<List<Guid>> GetFilteredProductIdsAsync(
+        IReadOnlyCollection<CatalogSelectedFilterDto>? filters,
+        CatalogSystemFiltersDto? systemFilters,
+        CancellationToken ct)
+    {
+        HashSet<Guid>? resultIds = null;
+
+        if (filters is not null)
+        {
+            foreach (var filter in filters)
+            {
+                var ids = filter switch
+                {
+                    CatalogSelectFilterDto x => await GetSelectFilterProductIdsAsync(x, ct),
+                    CatalogMultiSelectFilterDto x => await GetMultiSelectFilterProductIdsAsync(x, ct),
+                    CatalogBooleanFilterDto x => await GetBooleanFilterProductIdsAsync(x, ct),
+                    CatalogNumberRangeFilterDto x => await GetNumberRangeFilterProductIdsAsync(x, ct),
+                    CatalogTextFilterDto x => await GetTextFilterProductIdsAsync(x, ct),
+                    _ => new List<Guid>()
+                };
+
+                resultIds = ApplyIntersection(resultIds, ids);
+
+                if (resultIds.Count == 0)
+                    return [];
+            }
+        }
+
+        if (systemFilters is not null)
+        {
+            if (systemFilters.BrandIds.Count > 0)
+            {
+                var ids = await GetBrandFilterProductIdsAsync(systemFilters.BrandIds, ct);
+                resultIds = ApplyIntersection(resultIds, ids);
+
+                if (resultIds.Count == 0)
+                    return [];
+            }
+
+            if (systemFilters.SellerGroups.Count > 0)
+            {
+                var ids = await GetSellerGroupFilterProductIdsAsync(systemFilters.SellerGroups, ct);
+                resultIds = ApplyIntersection(resultIds, ids);
+
+                if (resultIds.Count == 0)
+                    return [];
+            }
+
+            if (systemFilters.PriceMin.HasValue || systemFilters.PriceMax.HasValue)
+            {
+                var ids = await GetPriceFilterProductIdsAsync(systemFilters.PriceMin, systemFilters.PriceMax, ct);
+                resultIds = ApplyIntersection(resultIds, ids);
+
+                if (resultIds.Count == 0)
+                    return [];
+            }
+        }
+
+        return resultIds?.ToList() ?? [];
+    }
+
+    private static HashSet<Guid> ApplyIntersection(
+        HashSet<Guid>? resultIds,
+        List<Guid> ids)
+    {
+        var currentSet = ids.ToHashSet();
+
+        if (resultIds is null)
+            return currentSet;
+
+        resultIds.IntersectWith(currentSet);
+        return resultIds;
+    }
+
+    private async Task<List<Guid>> GetSelectFilterProductIdsAsync(
+        CatalogSelectFilterDto filter,
+        CancellationToken ct)
+    {
+        Console.WriteLine($"GetSelectFilterProductIdsAsync: AttributeId={filter.AttributeId}, OptionIds count={filter.OptionIds?.Count ?? 0}");
+
+        var optionIds = filter.OptionIds?.Distinct().ToList();
+        if (optionIds is null || optionIds.Count == 0)
+            return [];
+
+        var attributeId = new AttributeId(filter.AttributeId);
+
+        var result = await _db.ProductAttributeValues
+            .AsNoTracking()
+            .Where(v => v.AttributeId == attributeId)
+            .Where(v => v.OptionId.HasValue && optionIds.Contains(v.OptionId.Value))
+            .Select(v => v.ProductId.Value)
+            .Distinct()
+            .ToListAsync(ct);
+
+        Console.WriteLine($"Select filter found {result.Count} product ids.");
+        return result;
+    }
+
+    private async Task<List<Guid>> GetMultiSelectFilterProductIdsAsync(
+        CatalogMultiSelectFilterDto filter,
+        CancellationToken ct)
+    {
+        Console.WriteLine($"GetMultiSelectFilterProductIdsAsync: AttributeId={filter.AttributeId}, OptionIds count={filter.OptionIds?.Count ?? 0}");
+
+        var optionIds = filter.OptionIds?.Distinct().ToList();
+        if (optionIds is null || optionIds.Count == 0)
+            return [];
+
+        var attributeId = new AttributeId(filter.AttributeId);
+
+        var result = await _db.ProductAttributeValues
+            .AsNoTracking()
+            .Where(v => v.AttributeId == attributeId)
+            .Join(
+                _db.ProductAttributeValueOptions.AsNoTracking().Where(o => optionIds.Contains(o.OptionId)),
+                v => v.Id,
+                o => EF.Property<Guid>(o, "product_attribute_value_id"),
+                (v, o) => v.ProductId.Value)
+            .Distinct()
+            .ToListAsync(ct);
+
+        Console.WriteLine($"Multi-select filter found {result.Count} product ids.");
+        return result;
+    }
+
+    private async Task<List<Guid>> GetBooleanFilterProductIdsAsync(
+        CatalogBooleanFilterDto filter,
+        CancellationToken ct)
+    {
+        Console.WriteLine($"GetBooleanFilterProductIdsAsync: AttributeId={filter.AttributeId}, Value={filter.Value}");
+
+        var attributeId = new AttributeId(filter.AttributeId);
+
+        var result = await _db.ProductAttributeValues
+            .AsNoTracking()
+            .Where(v => v.AttributeId == attributeId)
+            .Where(v => v.BoolValue.HasValue && v.BoolValue.Value == filter.Value)
+            .Select(v => v.ProductId.Value)
+            .Distinct()
+            .ToListAsync(ct);
+
+        Console.WriteLine($"Boolean filter found {result.Count} product ids.");
+        return result;
+    }
+
+    private async Task<List<Guid>> GetNumberRangeFilterProductIdsAsync(
+        CatalogNumberRangeFilterDto filter,
+        CancellationToken ct)
+    {
+        Console.WriteLine($"GetNumberRangeFilterProductIdsAsync: AttributeId={filter.AttributeId}, Min={filter.Min}, Max={filter.Max}");
+
+        var attributeId = new AttributeId(filter.AttributeId);
+
+        var result = await _db.ProductAttributeValues
+            .AsNoTracking()
+            .Where(v => v.AttributeId == attributeId)
+            .Where(v =>
+                v.NumberValue.HasValue &&
+                (!filter.Min.HasValue || v.NumberValue.Value >= filter.Min.Value) &&
+                (!filter.Max.HasValue || v.NumberValue.Value <= filter.Max.Value))
+            .Select(v => v.ProductId.Value)
+            .Distinct()
+            .ToListAsync(ct);
+
+        Console.WriteLine($"Number range filter found {result.Count} product ids.");
+        return result;
+    }
+
+    private async Task<List<Guid>> GetTextFilterProductIdsAsync(
+        CatalogTextFilterDto filter,
+        CancellationToken ct)
+    {
+        var values = filter.Values?
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x.Trim())
             .Distinct()
             .ToList();
 
-        var definitions = await LoadAttributeDefinitionMetasAsync(attributeIds, ct);
-        var definitionMap = definitions.ToDictionary(x => x.AttributeId);
+        Console.WriteLine($"GetTextFilterProductIdsAsync: AttributeId={filter.AttributeId}, Values count={values?.Count ?? 0}");
 
-        var products = await LoadCategoryPublishedProductsAsync(categoryId, ct);
-
-        var facets = new List<CatalogFacetDto>();
-
-        foreach (var categoryAttribute in categoryAttributes
-                     .OrderBy(x => x.SectionOrder ?? int.MaxValue)
-                     .ThenBy(x => x.SectionName)
-                     .ThenBy(x => x.SortOrder))
-        {
-            if (!definitionMap.TryGetValue(categoryAttribute.AttributeId, out var definition))
-                continue;
-
-            var facet = BuildFacet(products, categoryAttribute, definition);
-
-            if (facet is not null)
-                facets.Add(facet);
-        }
-
-        return new CategoryCatalogSidebarDto
-        {
-            CategoryId = categoryId,
-            Facets = facets
-        };
-    }
-
-    private async Task<List<CategoryAttributeMeta>> LoadFilterableCategoryAttributeMetasAsync(
-        Guid categoryId,
-        CancellationToken ct)
-    {
-        var categoryVo = new CategoryId(categoryId);
-
-        return await _db.Categories
-            .AsNoTracking()
-            .Where(x => x.Id == categoryVo)
-            .SelectMany(x => x.Attributes
-                .Where(a => a.IsFilterable)
-                .Select(a => new CategoryAttributeMeta
-                {
-                    AttributeId = a.AttributeId.Value,
-                    FilterPresentationType = a.FilterPresentationType,
-                    SectionName = a.SectionName,
-                    SectionOrder = a.SectionOrder,
-                    SortOrder = a.SortOrder
-                }))
-            .ToListAsync(ct);
-    }
-
-    private async Task<List<AttributeDefinitionMeta>> LoadAttributeDefinitionMetasAsync(
-        IReadOnlyCollection<Guid> attributeIds,
-        CancellationToken ct)
-    {
-        if (attributeIds.Count == 0)
+        if (values is null || values.Count == 0)
             return [];
 
-        var attributeIdSet = attributeIds.ToHashSet();
+        var attributeId = new AttributeId(filter.AttributeId);
 
-        var allDefinitions = await _db.AttributeDefinitions
+        var result = await _db.ProductAttributeValues
             .AsNoTracking()
-            .Select(x => new AttributeDefinitionMeta
-            {
-                AttributeId = x.Id.Value,
-                Code = x.Code,
-                Name = x.Name,
-                ValueType = x.ValueType,
-                Unit = x.Unit,
-                Options = x.Options
-                    .OrderBy(o => o.SortOrder)
-                    .Select(o => new AttributeOptionMeta
-                    {
-                        Id = o.Id,
-                        Value = o.Value,
-                        SortOrder = o.SortOrder
-                    })
-                    .ToList()
-            })
+            .Where(v => v.AttributeId == attributeId)
+            .Where(v => v.TextValue != null && values.Contains(v.TextValue))
+            .Select(v => v.ProductId.Value)
+            .Distinct()
             .ToListAsync(ct);
 
-        return allDefinitions
-            .Where(x => attributeIdSet.Contains(x.AttributeId))
-            .ToList();
+        Console.WriteLine($"Text filter found {result.Count} product ids.");
+        return result;
     }
 
-    private async Task<List<ProductSidebarData>> LoadCategoryPublishedProductsAsync(
-        Guid categoryId,
-        CancellationToken ct)
+    private async Task<List<Guid>> GetBrandFilterProductIdsAsync(
+    IReadOnlyCollection<Guid> brandIds,
+    CancellationToken ct)
     {
-        var categoryVo = new CategoryId(categoryId);
+        Console.WriteLine($"GetBrandFilterProductIdsAsync: brandIds count={brandIds.Count}");
 
-        var productIds = await _db.Products
-            .AsNoTracking()
-            .Where(p => p.Status == ProductStatus.Published)
-            .Where(p => p.CategoryId == categoryVo)
-            .Select(p => p.Id.Value)
-            .ToListAsync(ct);
-
-        if (productIds.Count == 0)
+        if (brandIds.Count == 0)
             return [];
 
-        var productIdSet = productIds.ToHashSet();
+        var normalizedBrandIds = brandIds
+            .Distinct()
+            .ToHashSet();
 
-        var attributeValueRows = await _db.Products
+        var rows = await _db.Products
             .AsNoTracking()
-            .Where(p => p.Status == ProductStatus.Published)
-            .Where(p => p.CategoryId == categoryVo)
-            .SelectMany(p => p.AttributeValues.Select(v => new ProductAttributeValueRow
+            .Where(x => x.Status == ProductStatus.Published)
+            .Where(x => x.BrandId != null)
+            .Select(x => new
             {
-                ProductId = p.Id.Value,
-                ProductAttributeValueId = v.Id,
-                AttributeId = v.AttributeId.Value,
-                TextValue = v.TextValue,
-                NumberValue = v.NumberValue,
-                BoolValue = v.BoolValue,
-                OptionId = v.OptionId
-            }))
+                ProductId = x.Id.Value,
+                BrandId = x.BrandId
+            })
             .ToListAsync(ct);
 
-        var optionRows = await _db.Products
+        Console.WriteLine($"Brand filter candidate rows: {rows.Count}");
+
+        var result = rows
+            .Where(x => x.BrandId is not null && normalizedBrandIds.Contains(x.BrandId.Value.Value))
+            .Select(x => x.ProductId)
+            .Distinct()
+            .ToList();
+
+        Console.WriteLine($"Brand filter found {result.Count} product ids.");
+        return result;
+    }
+
+    private async Task<List<Guid>> GetSellerGroupFilterProductIdsAsync(
+        IReadOnlyCollection<string> sellerGroups,
+        CancellationToken ct)
+    {
+        Console.WriteLine($"GetSellerGroupFilterProductIdsAsync: sellerGroups={string.Join(", ", sellerGroups)}");
+
+        if (sellerGroups.Count == 0)
+            return [];
+
+        var normalized = sellerGroups
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x.Trim().ToLowerInvariant())
+            .Distinct()
+            .ToList();
+
+        if (normalized.Count == 0)
+            return [];
+
+        var result = await _db.Offers
             .AsNoTracking()
-            .Where(p => p.Status == ProductStatus.Published)
-            .Where(p => p.CategoryId == categoryVo)
-            .SelectMany(p => p.AttributeValues)
-            .SelectMany(v => v.OptionIds.Select(o => new ProductAttributeValueOptionRow
-            {
-                ProductAttributeValueId = v.Id,
-                OptionId = o.OptionId
-            }))
+            .Where(x => x.Status == OfferStatus.Active)
+            .Join(
+                _db.Sellers.AsNoTracking(),
+                offer => offer.SellerId,
+                seller => seller.Id,
+                (offer, seller) => new
+                {
+                    ProductId = offer.ProductId.Value,
+                    SellerType = seller.Type
+                })
+            .Where(x =>
+                (normalized.Contains("platform") && x.SellerType == SellerType.Platform) ||
+                (normalized.Contains("others") && x.SellerType == SellerType.Regular))
+            .Select(x => x.ProductId)
+            .Distinct()
             .ToListAsync(ct);
 
-        var optionMap = optionRows
-            .GroupBy(x => x.ProductAttributeValueId)
-            .ToDictionary(
-                g => g.Key,
-                g => g.Select(x => x.OptionId).ToList());
-
-        var groupedProducts = attributeValueRows
-            .Where(x => productIdSet.Contains(x.ProductId))
-            .GroupBy(x => x.ProductId)
-            .ToDictionary(g => g.Key, g => g.ToList());
-
-        var products = productIds
-            .Select(productId =>
-            {
-                groupedProducts.TryGetValue(productId, out var values);
-
-                return new ProductSidebarData
-                {
-                    ProductId = productId,
-                    AttributeValues = (values ?? new List<ProductAttributeValueRow>())
-                        .Select(v => new ProductAttributeValueData
-                        {
-                            AttributeId = v.AttributeId,
-                            TextValue = v.TextValue,
-                            NumberValue = v.NumberValue,
-                            BoolValue = v.BoolValue,
-                            OptionId = v.OptionId,
-                            OptionIds = optionMap.TryGetValue(v.ProductAttributeValueId, out var ids)
-                                ? ids
-                                : []
-                        })
-                        .ToList()
-                };
-            })
-            .ToList();
-
-        return products;
+        Console.WriteLine($"Seller group filter found {result.Count} product ids.");
+        return result;
     }
 
-    private CatalogFacetDto? BuildFacet(
-        IReadOnlyCollection<ProductSidebarData> products,
-        CategoryAttributeMeta categoryMeta,
-        AttributeDefinitionMeta definition)
+    private async Task<List<Guid>> GetPriceFilterProductIdsAsync(
+        decimal? min,
+        decimal? max,
+        CancellationToken ct)
     {
-        return definition.ValueType switch
+        Console.WriteLine($"GetPriceFilterProductIdsAsync: min={min}, max={max}");
+
+        var result = await _db.Offers
+            .AsNoTracking()
+            .Where(x => x.Status == OfferStatus.Active)
+            .Where(x =>
+                (!min.HasValue || x.Price.Amount >= min.Value) &&
+                (!max.HasValue || x.Price.Amount <= max.Value))
+            .Select(x => x.ProductId.Value)
+            .Distinct()
+            .ToListAsync(ct);
+
+        Console.WriteLine($"Price filter found {result.Count} product ids.");
+        return result;
+    }
+
+    private static IQueryable<Product> ApplySorting(IQueryable<Product> query, string? sortBy)
+    {
+        var sortKey = sortBy?.Trim().ToLowerInvariant() ?? "newest";
+        Console.WriteLine($"ApplySorting: sortBy='{sortBy}', resolved='{sortKey}'");
+
+        return sortKey switch
         {
-            AttributeValueType.Boolean => BuildBooleanFacet(products, categoryMeta, definition),
-            AttributeValueType.Select => BuildSelectFacet(products, categoryMeta, definition),
-            AttributeValueType.MultiSelect => BuildMultiSelectFacet(products, categoryMeta, definition),
-            AttributeValueType.Number => BuildNumberFacet(products, categoryMeta, definition),
-            _ => null
+            "name_asc" => query.OrderBy(x => x.Name),
+            "name_desc" => query.OrderByDescending(x => x.Name),
+            "newest" => query.OrderByDescending(x => x.CreatedAt),
+            _ => query.OrderByDescending(x => x.CreatedAt)
         };
-    }
-
-    private CatalogFacetDto BuildBooleanFacet(
-        IReadOnlyCollection<ProductSidebarData> products,
-        CategoryAttributeMeta categoryMeta,
-        AttributeDefinitionMeta definition)
-    {
-        var counts = products
-            .SelectMany(p => p.AttributeValues
-                .Where(v => v.AttributeId == definition.AttributeId && v.BoolValue.HasValue)
-                .Select(v => new
-                {
-                    p.ProductId,
-                    Value = v.BoolValue!.Value
-                }))
-            .GroupBy(x => x.Value)
-            .Select(g => new
-            {
-                Value = g.Key,
-                Count = g.Select(x => x.ProductId).Distinct().Count()
-            })
-            .ToDictionary(x => x.Value, x => x.Count);
-
-        return new CatalogFacetDto
-        {
-            Kind = "attribute",
-            AttributeId = definition.AttributeId,
-            Code = definition.Code,
-            Name = definition.Name,
-            Type = "boolean",
-            Unit = definition.Unit,
-            SectionName = categoryMeta.SectionName,
-            SectionOrder = categoryMeta.SectionOrder,
-            SortOrder = categoryMeta.SortOrder,
-            Options = new List<CatalogFacetOptionDto>
-            {
-                new()
-                {
-                    Value = "true",
-                    Label = "Да",
-                    Count = counts.TryGetValue(true, out var trueCount) ? trueCount : 0,
-                    Selected = false
-                },
-                new()
-                {
-                    Value = "false",
-                    Label = "Нет",
-                    Count = counts.TryGetValue(false, out var falseCount) ? falseCount : 0,
-                    Selected = false
-                }
-            }
-        };
-    }
-
-    private CatalogFacetDto BuildSelectFacet(
-        IReadOnlyCollection<ProductSidebarData> products,
-        CategoryAttributeMeta categoryMeta,
-        AttributeDefinitionMeta definition)
-    {
-        var counts = products
-            .SelectMany(p => p.AttributeValues
-                .Where(v => v.AttributeId == definition.AttributeId && v.OptionId.HasValue)
-                .Select(v => new
-                {
-                    p.ProductId,
-                    OptionId = v.OptionId!.Value
-                }))
-            .GroupBy(x => x.OptionId)
-            .Select(g => new
-            {
-                OptionId = g.Key,
-                Count = g.Select(x => x.ProductId).Distinct().Count()
-            })
-            .ToDictionary(x => x.OptionId, x => x.Count);
-
-        var options = definition.Options
-            .Select(opt => new CatalogFacetOptionDto
-            {
-                Value = opt.Id.ToString(),
-                Label = opt.Value,
-                Count = counts.TryGetValue(opt.Id, out var count) ? count : 0,
-                Selected = false
-            })
-            .ToList();
-
-        return new CatalogFacetDto
-        {
-            Kind = "attribute",
-            AttributeId = definition.AttributeId,
-            Code = definition.Code,
-            Name = definition.Name,
-            Type = "select",
-            Unit = definition.Unit,
-            SectionName = categoryMeta.SectionName,
-            SectionOrder = categoryMeta.SectionOrder,
-            SortOrder = categoryMeta.SortOrder,
-            Options = options
-        };
-    }
-
-    private CatalogFacetDto BuildMultiSelectFacet(
-     IReadOnlyCollection<ProductSidebarData> products,
-     CategoryAttributeMeta categoryMeta,
-     AttributeDefinitionMeta definition)
-    {
-        Console.WriteLine($"===== MULTI SELECT FACET: {definition.Code} / {definition.AttributeId} =====");
-
-        foreach (var product in products)
-        {
-            var matchingValues = product.AttributeValues
-                .Where(value => value.AttributeId == definition.AttributeId)
-                .ToList();
-
-            if (matchingValues.Count == 0)
-                continue;
-
-            Console.WriteLine($"Product: {product.ProductId}");
-
-            foreach (var value in matchingValues)
-            {
-                Console.WriteLine($"  AttributeId: {value.AttributeId}");
-                Console.WriteLine($"  OptionIds: {(value.OptionIds.Count == 0 ? "<empty>" : string.Join(", ", value.OptionIds))}");
-            }
-        }
-
-        Console.WriteLine("Definition options:");
-        foreach (var option in definition.Options.OrderBy(x => x.SortOrder))
-        {
-            Console.WriteLine($"  {option.Value} / {option.Id}");
-        }
-
-        var countsByOptionId = products
-            .SelectMany(product => product.AttributeValues
-                .Where(value => value.AttributeId == definition.AttributeId)
-                .SelectMany(value => value.OptionIds.Distinct(), (value, optionId) => new
-                {
-                    product.ProductId,
-                    OptionId = optionId
-                }))
-            .GroupBy(x => x.OptionId)
-            .ToDictionary(
-                g => g.Key,
-                g => g.Select(x => x.ProductId).Distinct().Count());
-
-        Console.WriteLine("Counts by option id:");
-        foreach (var pair in countsByOptionId)
-        {
-            Console.WriteLine($"  {pair.Key} => {pair.Value}");
-        }
-
-        var options = definition.Options
-            .OrderBy(x => x.SortOrder)
-            .Select(option => new CatalogFacetOptionDto
-            {
-                Value = option.Id.ToString(),
-                Label = option.Value,
-                Count = countsByOptionId.TryGetValue(option.Id, out var count) ? count : 0,
-                Selected = false
-            })
-            .ToList();
-
-        return new CatalogFacetDto
-        {
-            Kind = "attribute",
-            AttributeId = definition.AttributeId,
-            Code = definition.Code,
-            Name = definition.Name,
-            Type = "multi_select",
-            Unit = definition.Unit,
-            SectionName = categoryMeta.SectionName,
-            SectionOrder = categoryMeta.SectionOrder,
-            SortOrder = categoryMeta.SortOrder,
-            Options = options
-        };
-    }
-
-    private CatalogFacetDto BuildNumberFacet(
-        IReadOnlyCollection<ProductSidebarData> products,
-        CategoryAttributeMeta categoryMeta,
-        AttributeDefinitionMeta definition)
-    {
-        var values = products
-            .SelectMany(p => p.AttributeValues
-                .Where(v => v.AttributeId == definition.AttributeId && v.NumberValue.HasValue)
-                .Select(v => v.NumberValue!.Value))
-            .ToList();
-
-        decimal? min = values.Count > 0 ? values.Min() : null;
-        decimal? max = values.Count > 0 ? values.Max() : null;
-
-        return new CatalogFacetDto
-        {
-            Kind = "attribute",
-            AttributeId = definition.AttributeId,
-            Code = definition.Code,
-            Name = definition.Name,
-            Type = "range",
-            Unit = definition.Unit,
-            SectionName = categoryMeta.SectionName,
-            SectionOrder = categoryMeta.SectionOrder,
-            SortOrder = categoryMeta.SortOrder,
-            Min = min,
-            Max = max,
-            Options = []
-        };
-    }
-
-    private sealed class CategoryAttributeMeta
-    {
-        public Guid AttributeId { get; init; }
-        public FilterPresentationType? FilterPresentationType { get; init; }
-        public string? SectionName { get; init; }
-        public int? SectionOrder { get; init; }
-        public int SortOrder { get; init; }
-    }
-
-    private sealed class AttributeDefinitionMeta
-    {
-        public Guid AttributeId { get; init; }
-        public string Code { get; init; } = default!;
-        public string Name { get; init; } = default!;
-        public AttributeValueType ValueType { get; init; }
-        public string? Unit { get; init; }
-        public List<AttributeOptionMeta> Options { get; init; } = [];
-    }
-
-    private sealed class AttributeOptionMeta
-    {
-        public Guid Id { get; init; }
-        public string Value { get; init; } = default!;
-        public int SortOrder { get; init; }
-    }
-
-    private sealed class ProductAttributeValueRow
-    {
-        public Guid ProductId { get; init; }
-        public Guid ProductAttributeValueId { get; init; }
-        public Guid AttributeId { get; init; }
-        public string? TextValue { get; init; }
-        public decimal? NumberValue { get; init; }
-        public bool? BoolValue { get; init; }
-        public Guid? OptionId { get; init; }
-    }
-
-    private sealed class ProductAttributeValueOptionRow
-    {
-        public Guid ProductAttributeValueId { get; init; }
-        public Guid OptionId { get; init; }
-    }
-
-    private sealed class ProductSidebarData
-    {
-        public Guid ProductId { get; init; }
-        public List<ProductAttributeValueData> AttributeValues { get; init; } = [];
-    }
-
-    private sealed class ProductAttributeValueData
-    {
-        public Guid AttributeId { get; init; }
-        public string? TextValue { get; init; }
-        public decimal? NumberValue { get; init; }
-        public bool? BoolValue { get; init; }
-        public Guid? OptionId { get; init; }
-        public List<Guid> OptionIds { get; init; } = [];
     }
 }
