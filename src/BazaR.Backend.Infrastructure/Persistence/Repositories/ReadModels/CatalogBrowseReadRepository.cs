@@ -24,13 +24,13 @@ public sealed class CatalogBrowseReadRepository : ICatalogBrowseReadRepository
     }
 
     public async Task<PagedResult<ProductCardDto>> BrowseCategoryProductsAsync(
-        Guid categoryId,
-        IReadOnlyCollection<CatalogSelectedFilterDto> filters,
-        CatalogSystemFiltersDto? systemFilters,
-        int page,
-        int pageSize,
-        string? sortBy,
-        CancellationToken ct = default)
+    Guid categoryId,
+    IReadOnlyCollection<CatalogSelectedFilterDto> filters,
+    CatalogSystemFiltersDto? systemFilters,
+    int page,
+    int pageSize,
+    string? sortBy,
+    CancellationToken ct = default)
     {
         Console.WriteLine($"\n=== BrowseCategoryProductsAsync START ===");
         Console.WriteLine($"CategoryId: {categoryId}");
@@ -88,18 +88,29 @@ public sealed class CatalogBrowseReadRepository : ICatalogBrowseReadRepository
         Console.WriteLine($"Total count after sorting: {totalCount}");
 
         var items = await query
+            .GroupJoin(
+                _db.ProductRatingSummaries.AsNoTracking(),
+                p => p.Id,
+                r => r.Id,
+                (p, ratings) => new
+                {
+                    Product = p,
+                    Rating = ratings.FirstOrDefault()
+                })
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .Select(x => new ProductCardDto(
-                x.Id.Value,
-                x.Name,
-                x.Slug != null ? x.Slug.Value : null,
-                x.Description,
-                x.Images
+                x.Product.Id.Value,
+                x.Product.Name,
+                x.Product.Slug != null ? x.Product.Slug.Value : null,
+                x.Product.Description,
+                x.Product.Images
                     .OrderByDescending(i => i.IsMain)
                     .ThenBy(i => i.SortOrder)
                     .Select(i => i.Url)
-                    .FirstOrDefault()
+                    .FirstOrDefault(),
+                x.Rating != null ? x.Rating.AverageRating : 0m,
+                x.Rating != null ? x.Rating.ReviewsCount : 0
             ))
             .ToListAsync(ct);
 

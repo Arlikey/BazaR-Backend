@@ -3,7 +3,7 @@
 namespace BazaR.Backend.Api.Contracts.Categories;
 
 public sealed record CreateCategoryRequest(
-    [Required, MaxLength(200)] string Name,
+    string Name,
     Guid? ParentCategoryId,
-    int SortOrder = 0
-);
+    int SortOrder,
+    string? Slug);

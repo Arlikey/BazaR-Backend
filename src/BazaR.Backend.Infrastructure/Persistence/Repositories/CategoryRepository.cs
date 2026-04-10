@@ -148,6 +148,27 @@ public sealed class CategoryRepository : ICategoryRepository
     // Persistence
     // =====================================================
 
+    public Task<bool> SlugExistsAsync(
+    CategorySlug slug,
+    CategoryId? excludeCategoryId,
+    CancellationToken ct)
+    {
+        var query = _db.Categories
+            .Where(c => c.Slug != null && c.Slug == slug);
+
+        if (excludeCategoryId.HasValue)
+            query = query.Where(c => c.Id != excludeCategoryId.Value);
+
+        return query.AnyAsync(ct);
+    }
+
+    public Task<Category?> GetBySlugAsync(CategorySlug slug, CancellationToken ct)
+    {
+        return _db.Categories
+            .SingleOrDefaultAsync(c => c.Slug != null && c.Slug == slug, ct);
+    }
+
+
     public async Task AddAsync(Category category, CancellationToken ct)
         => await _db.Categories.AddAsync(category, ct);
 

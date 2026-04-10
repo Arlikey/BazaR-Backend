@@ -4,7 +4,11 @@ public interface ICategoryRepository
 {
     Task<Category?> GetByIdAsync(CategoryId id, CancellationToken ct);
     Task<bool> ExistsAsync(CategoryId id, CancellationToken ct);
-
+    Task<bool> SlugExistsAsync(
+    CategorySlug slug,
+    CategoryId? excludeCategoryId,
+    CancellationToken ct = default);
+    Task<Category?> GetBySlugAsync(CategorySlug slug, CancellationToken ct);
     Task<IReadOnlyList<Category>> GetChildrenAsync(CategoryId? parentId, CancellationToken ct);
     Task<bool> NameExistsAsync(string name, CategoryId? parentId, CategoryId? excludeCategoryId, CancellationToken ct);
 

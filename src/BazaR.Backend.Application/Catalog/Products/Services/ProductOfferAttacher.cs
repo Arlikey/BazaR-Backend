@@ -42,6 +42,8 @@ public sealed class ProductOfferAttacher : IProductOfferAttacher
                 Slug: p.Slug,
                 Description: p.Description,
                 MainImageUrl: p.MainImageUrl,
+                RatingAverage: p.RatingAverage,
+                ReviewsCount: p.ReviewsCount,
                 Offer: offerMap.TryGetValue(p.Id, out var offer)
                     ? MapOffer(offer)
                     : null

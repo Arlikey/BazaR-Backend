@@ -22,7 +22,9 @@ public sealed record ProductCardDto(
     string Name,
     string? Slug,
     string? Description,
-    string? MainImageUrl
+    string? MainImageUrl,
+    decimal? RatingAverage,
+    int ReviewsCount
 );
 
 public sealed record ProductCardWithOfferDto(
@@ -31,9 +33,10 @@ public sealed record ProductCardWithOfferDto(
     string? Slug,
     string? Description,
     string? MainImageUrl,
+    decimal? RatingAverage,
+    int ReviewsCount,
     OfferCardDto? Offer
 );
-
 /*public sealed record ProductCardWithOfferDto(
     Guid Id,
     string Name,

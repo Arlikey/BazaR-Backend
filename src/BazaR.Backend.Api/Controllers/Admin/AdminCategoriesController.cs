@@ -21,13 +21,19 @@ public sealed class CategoriesAdminController : ControllerBase
     private readonly IMediator _mediator;
     public CategoriesAdminController(IMediator mediator) => _mediator = mediator;
 
-    
 
+
+    // Создание новой категории
     // Создание новой категории
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateCategoryRequest request, CancellationToken ct)
     {
-        var cmd = new CreateCategoryCommand(request.Name, request.ParentCategoryId, request.SortOrder);
+        var cmd = new CreateCategoryCommand(
+            request.Name,
+            request.ParentCategoryId,
+            request.SortOrder,
+            request.Slug);
+
         var result = await _mediator.Send(cmd, ct);
         if (result.IsFailure)
             return ProblemFromError(result.Error);
@@ -39,7 +45,6 @@ public sealed class CategoriesAdminController : ControllerBase
             value: new IdResponse(result.Value.Value));
     }
 
-    
     [HttpPost("{id:guid}/image")]
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> UploadImage(Guid id, IFormFile file, CancellationToken ct)

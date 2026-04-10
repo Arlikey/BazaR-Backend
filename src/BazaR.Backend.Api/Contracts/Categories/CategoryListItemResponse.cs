@@ -1,8 +1,9 @@
 ﻿namespace BazaR.Backend.Api.Contracts.Categories;
-using System.ComponentModel.DataAnnotations;
+
 public sealed record CategoryListItemResponse(
     Guid Id,
     string Name,
+    string? Slug,
     Guid? ParentCategoryId,
     int SortOrder,
     string? ImageUrl);

@@ -7,6 +7,7 @@ namespace BazaR.Backend.Application.Abstractions.ReadModels;
 public sealed record CategoryListItemDto(
     Guid Id,
     string Name,
+    string? Slug,
     Guid? ParentCategoryId,
     int SortOrder,
     int AttributesCount,
@@ -16,6 +17,7 @@ public sealed record CategoryListItemDto(
 public sealed record CategoryDetailsDto(
     Guid Id,
     string Name,
+    string? Slug,
     Guid? ParentCategoryId,
     int SortOrder,
     string? ImageUrl,

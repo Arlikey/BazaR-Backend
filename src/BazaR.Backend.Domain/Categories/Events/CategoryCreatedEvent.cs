@@ -10,3 +10,12 @@ using BazaR.Backend.Domain.Common;
 
 public sealed record CategoryCreatedEvent(CategoryId CategoryId) : DomainEvent;
 
+
+public sealed record CategorySlugChangedEvent(
+    CategoryId CategoryId,
+    string? Slug
+) : DomainEvent;
+
+
+
+

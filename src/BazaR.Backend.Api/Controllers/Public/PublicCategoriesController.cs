@@ -1,5 +1,6 @@
 ﻿using BazaR.Backend.Api.Contracts.Categories;
 using BazaR.Backend.Application.Catalog.Categories.Queries.GetById;
+using BazaR.Backend.Application.Catalog.Categories.Queries.GetBySlug;
 using BazaR.Backend.Application.Catalog.Categories.Queries.GetTemplate;
 using BazaR.Backend.Application.Catalog.Categories.Queries.List;
 using BazaR.Backend.Application.Catalog.Categories.Queries.Search;
@@ -19,7 +20,10 @@ public sealed class PublicCategoriesController : ControllerBase
 {
     private readonly IMediator _mediator;
 
-    public PublicCategoriesController(IMediator mediator) => _mediator = mediator;
+    public PublicCategoriesController(IMediator mediator)
+    {
+        _mediator = mediator;
+    }
 
     [HttpGet]
     public async Task<IActionResult> List(CancellationToken ct)
@@ -32,6 +36,7 @@ public sealed class PublicCategoriesController : ControllerBase
             .Select(x => new CategoryListItemResponse(
                 x.Id,
                 x.Name,
+                x.Slug,
                 x.ParentCategoryId,
                 x.SortOrder,
                 x.ImageUrl))
@@ -44,7 +49,25 @@ public sealed class PublicCategoriesController : ControllerBase
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
     {
         var categoryId = new CategoryId(id);
+
         var result = await _mediator.Send(new GetCategoryByIdQuery(categoryId), ct);
+        if (result.IsFailure)
+            return ProblemFromError(result.Error);
+
+        return Ok(result.Value);
+    }
+
+    [HttpGet("by-slug/{slug}")]
+    public async Task<IActionResult> GetBySlug(string slug, CancellationToken ct)
+    {
+        var slugResult = CategorySlug.Create(slug);
+        if (slugResult.IsFailure)
+            return ProblemFromError(slugResult.Error);
+
+        var result = await _mediator.Send(
+            new GetCategoryBySlugQuery(slugResult.Value),
+            ct);
+
         if (result.IsFailure)
             return ProblemFromError(result.Error);
 
@@ -62,7 +85,10 @@ public sealed class PublicCategoriesController : ControllerBase
     }
 
     [HttpGet("search")]
-    public async Task<IActionResult> Search([FromQuery] string term, [FromQuery] int limit = 20, CancellationToken ct = default)
+    public async Task<IActionResult> Search(
+        [FromQuery] string term,
+        [FromQuery] int limit = 20,
+        CancellationToken ct = default)
     {
         var result = await _mediator.Send(new SearchCategoriesQuery(term, limit), ct);
         if (result.IsFailure)
@@ -72,6 +98,7 @@ public sealed class PublicCategoriesController : ControllerBase
             .Select(x => new CategoryListItemResponse(
                 x.Id,
                 x.Name,
+                x.Slug,
                 x.ParentCategoryId,
                 x.SortOrder,
                 x.ImageUrl))
@@ -84,7 +111,11 @@ public sealed class PublicCategoriesController : ControllerBase
     public async Task<IActionResult> GetAttributesTemplate(Guid id, CancellationToken ct)
     {
         var categoryId = new CategoryId(id);
-        var result = await _mediator.Send(new GetCategoryAttributesTemplateQuery(categoryId), ct);
+
+        var result = await _mediator.Send(
+            new GetCategoryAttributesTemplateQuery(categoryId),
+            ct);
+
         if (result.IsFailure)
             return ProblemFromError(result.Error);
 
@@ -97,9 +128,14 @@ public sealed class PublicCategoriesController : ControllerBase
         {
             "Category.NotFound" => StatusCodes.Status404NotFound,
             "Category.ParentCategoryNotFound" => StatusCodes.Status404NotFound,
+            "Category.InvalidSlugFormat" => StatusCodes.Status400BadRequest,
+            "Category.SlugTooLong" => StatusCodes.Status400BadRequest,
             _ => StatusCodes.Status400BadRequest
         };
 
-        return Problem(title: error.Code, detail: error.Message, statusCode: status);
+        return Problem(
+            title: error.Code,
+            detail: error.Message,
+            statusCode: status);
     }
 }

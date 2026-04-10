@@ -50,5 +50,21 @@ public static class CategoryErrors
     public static readonly Error CannotDeleteCategoryWithProducts = new(
         "Category.CannotDeleteCategoryWithProducts",
         "Cannot delete category that contains products");
+
+    public static readonly Error SlugRequired =
+       new("Category.SlugRequired", "Slug is required");
+
+    public static readonly Error SlugTooLong =
+        new("Category.SlugTooLong", "Slug is too long");
+
+    public static readonly Error InvalidSlugFormat =
+        new("Category.InvalidSlugFormat", "Slug must contain only a-z, 0-9 and '-'");
+
+    public static readonly Error SlugAlreadyExists =
+       new("Category.SlugAlreadyExists", "A category with this slug already exists.");
+
+    public static readonly Error CannotSetDescendantAsParent =
+        new("Category.CannotSetDescendantAsParent", "A category cannot be moved under its own descendant.");
+
 }
 

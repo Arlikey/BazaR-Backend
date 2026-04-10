@@ -21,6 +21,7 @@ public sealed class CategoryReadRepository : ICategoryReadRepository
             .Select(c => new CategoryDetailsDto(
                 c.Id.Value,
                 c.Name,
+                c.Slug != null ? c.Slug.Value : null,
                 c.ParentCategoryId.HasValue
                     ? c.ParentCategoryId.Value.Value
                     : (Guid?)null,
@@ -54,6 +55,7 @@ public sealed class CategoryReadRepository : ICategoryReadRepository
             .Select(c => new CategoryListItemDto(
                 c.Id.Value,
                 c.Name,
+                c.Slug != null ? c.Slug.Value : null,
                 c.ParentCategoryId.HasValue
                     ? c.ParentCategoryId.Value.Value
                     : (Guid?)null,
@@ -85,6 +87,7 @@ public sealed class CategoryReadRepository : ICategoryReadRepository
             .Select(c => new CategoryListItemDto(
                 c.Id.Value,
                 c.Name,
+                c.Slug != null ? c.Slug.Value : null,
                 c.ParentCategoryId.HasValue
                     ? c.ParentCategoryId.Value.Value
                     : (Guid?)null,

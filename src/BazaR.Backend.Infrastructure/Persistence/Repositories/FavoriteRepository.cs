@@ -50,9 +50,9 @@ public sealed class FavoriteRepository : IFavoriteRepository
     }
 
     public async Task<IReadOnlyList<ProductCardDto>> GetProductCardsAsync(
-        UserId userId,
-        int limit,
-        CancellationToken ct)
+    UserId userId,
+    int limit,
+    CancellationToken ct)
     {
         if (limit <= 0)
             limit = 20;
@@ -64,6 +64,9 @@ public sealed class FavoriteRepository : IFavoriteRepository
             from f in _db.Favorites.AsNoTracking()
             join p in _db.Products.AsNoTracking()
                 on f.ProductId equals p.Id
+            join r in _db.ProductRatingSummaries.AsNoTracking()
+                on p.Id equals r.Id into ratings
+            from rating in ratings.DefaultIfEmpty()
             where f.UserId == userId
             orderby f.AddedAtUtc descending
             select new ProductCardDto(
@@ -75,7 +78,9 @@ public sealed class FavoriteRepository : IFavoriteRepository
                     .OrderByDescending(i => i.IsMain)
                     .ThenBy(i => i.SortOrder)
                     .Select(i => i.Url)
-                    .FirstOrDefault()
+                    .FirstOrDefault(),
+                rating != null ? rating.AverageRating : 0m,
+                rating != null ? rating.ReviewsCount : 0
             ))
             .Take(limit)
             .ToListAsync(ct);

@@ -12,7 +12,9 @@ public sealed class CreateCategoryCommandHandler
     private readonly ICategoryRepository _categories;
     private readonly IUnitOfWork _uow;
 
-    public CreateCategoryCommandHandler(ICategoryRepository categories, IUnitOfWork uow)
+    public CreateCategoryCommandHandler(
+        ICategoryRepository categories,
+        IUnitOfWork uow)
     {
         _categories = categories;
         _uow = uow;
@@ -25,7 +27,7 @@ public sealed class CreateCategoryCommandHandler
             ? null
             : new CategoryId(request.ParentCategoryId.Value);
 
-        // 1) Проверка существования родителя (если указан)
+        // 1) Проверка существования родителя
         if (parentId is not null)
         {
             var parentExists = await _categories.ExistsAsync(parentId.Value, ct);
@@ -33,9 +35,11 @@ public sealed class CreateCategoryCommandHandler
                 return Result<CategoryId>.Failure(CategoryErrors.ParentCategoryNotFound);
         }
 
-        // 2) Уникальность имени среди "соседей" (один parent)
+        // 2) Уникальность имени среди "соседей"
+        var trimmedName = request.Name.Trim();
+
         var nameExists = await _categories.NameExistsAsync(
-            request.Name.Trim(),
+            trimmedName,
             parentId,
             excludeCategoryId: null,
             ct);
@@ -43,19 +47,40 @@ public sealed class CreateCategoryCommandHandler
         if (nameExists)
             return Result<CategoryId>.Failure(CategoryErrors.NameAlreadyExists);
 
-        // 3) Создание доменного агрегата
+        // 3) Slug
+        CategorySlug? slug = null;
+
+        if (!string.IsNullOrWhiteSpace(request.Slug))
+        {
+            var slugResult = CategorySlug.Create(request.Slug);
+            if (slugResult.IsFailure)
+                return Result<CategoryId>.Failure(slugResult.Error);
+
+            slug = slugResult.Value;
+
+            var slugExists = await _categories.SlugExistsAsync(
+                slug,
+                excludeCategoryId: null,
+                ct);
+
+            if (slugExists)
+                return Result<CategoryId>.Failure(CategoryErrors.SlugAlreadyExists);
+        }
+
+        // 4) Создание доменного агрегата
         var categoryResult = Category.Create(
-            name: request.Name,
+            name: trimmedName,
             parentCategoryId: parentId,
-            sortOrder: request.SortOrder);
+            sortOrder: request.SortOrder,
+            slug: slug);
 
         if (categoryResult.IsFailure)
             return Result<CategoryId>.Failure(categoryResult.Error);
 
         var category = categoryResult.Value;
 
-        // 4) Сохранение
-        await _categories.AddAsync(category, ct); 
+        // 5) Сохранение
+        await _categories.AddAsync(category, ct);
         await _uow.SaveChangesAsync(ct);
 
         return Result<CategoryId>.Success(category.Id);

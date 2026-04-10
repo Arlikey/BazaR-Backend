@@ -14,6 +14,7 @@ public sealed class Category : AggregateRoot<CategoryId>
     private CategoryImage? _image;
     public CategoryImage? Image => _image;
 
+    public CategorySlug? Slug { get; private set; }
     public string Name { get; private set; } = default!;
     public CategoryId? ParentCategoryId { get; private set; }
     public int SortOrder { get; private set; }
@@ -28,22 +29,42 @@ public sealed class Category : AggregateRoot<CategoryId>
 
     private Category() { }
 
-    public static Result<Category> Create(string name, CategoryId? parentCategoryId = null, int sortOrder = 0)
+    public static Result<Category> Create(
+        string name,
+        CategoryId? parentCategoryId = null,
+        int sortOrder = 0,
+        CategorySlug? slug = null)
     {
         if (string.IsNullOrWhiteSpace(name))
             return Result<Category>.Failure(CategoryErrors.NameRequired);
 
         var trimmed = name.Trim();
+
         if (trimmed.Length > MaxNameLength)
             return Result<Category>.Failure(CategoryErrors.NameTooLong);
 
         if (sortOrder < 0)
             return Result<Category>.Failure(CategoryErrors.SortOrderCannotBeNegative);
 
-        var category = new Category(CategoryId.New(), trimmed, parentCategoryId, sortOrder);
+        var category = new Category(CategoryId.New(), trimmed, parentCategoryId, sortOrder)
+        {
+            Slug = slug
+        };
+
         category.AddDomainEvent(new CategoryCreatedEvent(category.Id));
 
         return Result<Category>.Success(category);
+    }
+
+    public Result SetSlug(CategorySlug? slug)
+    {
+        if (Slug == slug)
+            return Result.Success();
+
+        Slug = slug;
+        AddDomainEvent(new CategorySlugChangedEvent(Id, Slug?.Value));
+
+        return Result.Success();
     }
 
     public Result Rename(string name)

@@ -20,8 +20,7 @@ public sealed class CategoryConfiguration : IEntityTypeConfiguration<Category>
             .ValueGeneratedNever()
             .HasConversion(
                 id => id.Value,
-                value => new CategoryId(value)
-            );
+                value => new CategoryId(value));
 
         // ======================
         // Fields
@@ -34,6 +33,15 @@ public sealed class CategoryConfiguration : IEntityTypeConfiguration<Category>
         builder.Property(x => x.SortOrder)
             .HasColumnName("sort_order")
             .IsRequired();
+
+        builder.Property(x => x.Slug)
+            .HasColumnName("slug")
+            .HasMaxLength(200)
+            .HasConversion(
+                slug => slug == null ? null : slug.Value,
+                value => string.IsNullOrWhiteSpace(value)
+                    ? null
+                    : CategorySlug.Create(value).Value);
 
         // ParentCategoryId? (nullable VO) -> Guid?
         builder.Property(x => x.ParentCategoryId)
@@ -63,24 +71,13 @@ public sealed class CategoryConfiguration : IEntityTypeConfiguration<Category>
             img.Property(x => x.SizeBytes)
                 .HasColumnName("image_size_bytes");
 
-            // Индекс по StorageKey внутри owned-типа
             img.HasIndex(x => x.StorageKey)
                 .HasDatabaseName("ix_categories_image_storage_key");
         });
 
-        // Явно указываем, что Image опционально и использует backing field
         builder.Navigation(x => x.Image)
             .IsRequired(false)
             .UsePropertyAccessMode(PropertyAccessMode.Field);
-
-        // ======================
-        // Indexes
-        // ======================
-        builder.HasIndex(x => x.ParentCategoryId)
-            .HasDatabaseName("ix_categories_parent_id");
-
-        builder.HasIndex(x => new { x.ParentCategoryId, x.SortOrder })
-            .HasDatabaseName("ix_categories_parent_sort");
 
         // ======================
         // CategoryAttributes (1:N)
@@ -92,6 +89,19 @@ public sealed class CategoryConfiguration : IEntityTypeConfiguration<Category>
 
         builder.Navigation(x => x.Attributes)
             .UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        // ======================
+        // Indexes
+        // ======================
+        builder.HasIndex(x => x.ParentCategoryId)
+            .HasDatabaseName("ix_categories_parent_id");
+
+        builder.HasIndex(x => new { x.ParentCategoryId, x.SortOrder })
+            .HasDatabaseName("ix_categories_parent_sort");
+
+        builder.HasIndex(x => x.Slug)
+            .IsUnique()
+            .HasDatabaseName("ix_categories_slug");
 
         // ======================
         // Ignore domain events
@@ -106,13 +116,17 @@ public sealed class CategoryConfiguration : IEntityTypeConfiguration<Category>
             t.HasCheckConstraint("ck_categories_sort_order_non_negative", "sort_order >= 0");
             t.HasCheckConstraint("ck_categories_name_not_empty", "char_length(name) > 0");
 
-            // image_size_bytes либо null, либо > 0
-            t.HasCheckConstraint("ck_categories_image_size_positive_or_null",
+            t.HasCheckConstraint(
+                "ck_categories_image_size_positive_or_null",
                 "image_size_bytes IS NULL OR image_size_bytes > 0");
 
-            // если указан url — должен быть и storage_key (и наоборот)
-            t.HasCheckConstraint("ck_categories_image_pair",
+            t.HasCheckConstraint(
+                "ck_categories_image_pair",
                 "(image_url IS NULL AND image_storage_key IS NULL) OR (image_url IS NOT NULL AND image_storage_key IS NOT NULL)");
+
+            t.HasCheckConstraint(
+                "ck_categories_slug_not_empty",
+                "slug IS NULL OR char_length(slug) > 0");
         });
     }
 }

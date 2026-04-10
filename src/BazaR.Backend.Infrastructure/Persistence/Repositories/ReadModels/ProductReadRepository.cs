@@ -63,18 +63,26 @@ public sealed class ProductReadRepository : IProductReadRepository
             query = query.Where(p => p.Status == status.Value);
 
         var rows = await query
-            .OrderBy(p => p.Name)
-            .ThenBy(p => p.Id)
-            .Select(p => new ProductCardDto(
-                p.Id.Value,
-                p.Name,
-                p.Slug != null ? p.Slug.Value : null,
-                p.Description,
-                p.Images
+            .GroupJoin(
+                _db.ProductRatingSummaries.AsNoTracking(),
+                p => p.Id,
+                r => r.Id,
+                (p, ratings) => new { Product = p, Rating = ratings.FirstOrDefault() }
+            )
+            .OrderBy(x => x.Product.Name)
+            .ThenBy(x => x.Product.Id)
+            .Select(x => new ProductCardDto(
+                x.Product.Id.Value,
+                x.Product.Name,
+                x.Product.Slug != null ? x.Product.Slug.Value : null,
+                x.Product.Description,
+                x.Product.Images
                     .OrderByDescending(i => i.IsMain)
                     .ThenBy(i => i.SortOrder)
                     .Select(i => i.Url)
-                    .FirstOrDefault()
+                    .FirstOrDefault(),
+                x.Rating != null ? x.Rating.AverageRating : 0m,
+                x.Rating != null ? x.Rating.ReviewsCount : 0
             ))
             .ToListAsync(ct);
 
@@ -103,7 +111,8 @@ public sealed class ProductReadRepository : IProductReadRepository
 
         var words = term.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
-        IQueryable<Product> query = _db.Products.AsNoTracking()
+        IQueryable<Product> query = _db.Products
+            .AsNoTracking()
             .Where(p => p.Status == filter.Status);
 
         query = query.Where(p => EF.Functions.ILike(p.Name, $"%{term}%"));
@@ -119,23 +128,31 @@ public sealed class ProductReadRepository : IProductReadRepository
         var prefixPattern = $"{term}%";
 
         var items = await query
-            .OrderByDescending(p => EF.Functions.ILike(p.Name, term))
-            .ThenByDescending(p => EF.Functions.ILike(p.Name, prefixPattern))
-            .ThenBy(p => p.Name)
-            .ThenBy(p => p.Id)
+            .GroupJoin(
+                _db.ProductRatingSummaries.AsNoTracking(),
+                p => p.Id,
+                r => r.Id,
+                (p, ratings) => new { Product = p, Rating = ratings.FirstOrDefault() }
+            )
+            .OrderByDescending(x => EF.Functions.ILike(x.Product.Name, term))
+            .ThenByDescending(x => EF.Functions.ILike(x.Product.Name, prefixPattern))
+            .ThenBy(x => x.Product.Name)
+            .ThenBy(x => x.Product.Id)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(p => new ProductCardDto(
-                p.Id.Value,
-                p.Name,
-                p.Slug != null ? p.Slug.Value : null,
-                p.Description,
-                p.Images
-                       .OrderByDescending(i => i.IsMain)
-                       .ThenBy(i => i.SortOrder)
-                       .Select(i => i.Url)
-                       .FirstOrDefault()
-                ))
+            .Select(x => new ProductCardDto(
+                x.Product.Id.Value,
+                x.Product.Name,
+                x.Product.Slug != null ? x.Product.Slug.Value : null,
+                x.Product.Description,
+                x.Product.Images
+                    .OrderByDescending(i => i.IsMain)
+                    .ThenBy(i => i.SortOrder)
+                    .Select(i => i.Url)
+                    .FirstOrDefault(),
+                x.Rating != null ? x.Rating.AverageRating : 0m,
+                x.Rating != null ? x.Rating.ReviewsCount : 0
+            ))
             .ToListAsync(ct);
 
         return new PagedResult<ProductCardDto>
@@ -147,7 +164,7 @@ public sealed class ProductReadRepository : IProductReadRepository
         };
     }
 
-    
+
     public async Task<IReadOnlyList<ProductCardDto>> ListBySellerAsync(
     SellerId sellerId,
     int limit,
@@ -159,20 +176,28 @@ public sealed class ProductReadRepository : IProductReadRepository
         var items = await _db.Products
             .AsNoTracking()
             .Where(p => p.OwnerSellerId == sellerId)
-            .OrderByDescending(p => p.CreatedAt)
-            .ThenByDescending(p => p.Id)
+            .GroupJoin(
+                _db.ProductRatingSummaries.AsNoTracking(),
+                p => p.Id,
+                r => r.Id,
+                (p, ratings) => new { Product = p, Rating = ratings.FirstOrDefault() }
+            )
+            .OrderByDescending(x => x.Product.CreatedAt)
+            .ThenByDescending(x => x.Product.Id)
             .Take(limit)
-            .Select(p => new ProductCardDto(
-                p.Id.Value,
-                p.Name,
-                p.Slug != null ? p.Slug.Value : null,
-                p.Description,
-                p.Images
+            .Select(x => new ProductCardDto(
+                x.Product.Id.Value,
+                x.Product.Name,
+                x.Product.Slug != null ? x.Product.Slug.Value : null,
+                x.Product.Description,
+                x.Product.Images
                     .OrderByDescending(i => i.IsMain)
                     .ThenBy(i => i.SortOrder)
                     .Select(i => i.Url)
-                    .FirstOrDefault()
-                ))
+                    .FirstOrDefault(),
+                x.Rating != null ? x.Rating.AverageRating : 0m,
+                x.Rating != null ? x.Rating.ReviewsCount : 0
+            ))
             .ToListAsync(ct);
 
         return items;
