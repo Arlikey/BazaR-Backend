@@ -1,0 +1,66 @@
+name: Build and deploy ASP.Net Core app to Azure Web App - bazar-api
+
+on:
+  push:
+    branches:
+      - develop
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET Core
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore src/BazaR.Backend.Api/BazaR.Backend.Api.csproj
+
+      - name: Build
+        run: dotnet build src/BazaR.Backend.Api/BazaR.Backend.Api.csproj --configuration Release --no-restore
+
+      - name: Publish
+        run: dotnet publish src/BazaR.Backend.Api/BazaR.Backend.Api.csproj --configuration Release --output "${{ env.DOTNET_ROOT }}/myapp" --no-build
+
+      - name: Upload artifact for deployment job
+        uses: actions/upload-artifact@v4
+        with:
+          name: .net-app
+          path: ${{ env.DOTNET_ROOT }}/myapp
+
+  deploy:
+    runs-on: windows-latest
+    needs: build
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v4
+        with:
+          name: .net-app
+          path: .
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_7D2587EA99C0483A8B95D509892621D7 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_C3F9258EC3CC4829B6322BD397778F52 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_F35822BDD0534AB5A4C3993F9E4C43C0 }}
+
+      - name: Deploy to Azure Web App
+        id: deploy-to-webapp
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'bazar-api'
+          slot-name: 'Production'
+          package: .
