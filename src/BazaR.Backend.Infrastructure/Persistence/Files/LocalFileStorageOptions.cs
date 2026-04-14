@@ -1,4 +1,4 @@
-﻿using System;
+﻿/*using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,3 +12,4 @@ namespace BazaR.Backend.Infrastructure.Persistence.Files
         public string RequestPath { get; set; } = "/uploads";
     }
 }
+*/

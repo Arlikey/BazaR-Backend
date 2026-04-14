@@ -106,7 +106,7 @@ public static class DependencyInjection
         services.AddScoped<IOfferReadRepository, OfferReadRepository>();
         services.AddScoped<IProductOfferAttacher, ProductOfferAttacher>();
         services.AddScoped<IProductImageStorage, ProductImageStorage>();
-        services.AddScoped<IFileStorage, LocalFileStorage>();
+        services.AddScoped<IFileStorage, AzureBlobFileStorage>();
 
         services.AddScoped<IFavoriteRepository, FavoriteRepository>();
         services.AddScoped<IBrandRepository, BrandRepository>();

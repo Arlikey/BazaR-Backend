@@ -1,4 +1,4 @@
-﻿using BazaR.Backend.Application.Abstractions.Files;
+﻿/*using BazaR.Backend.Application.Abstractions.Files;
 using Microsoft.Extensions.Options;
 
 namespace BazaR.Backend.Infrastructure.Persistence.Files;
@@ -86,4 +86,4 @@ public sealed class LocalFileStorage : IFileStorage
 
         return folder;
     }
-}
+}*/
