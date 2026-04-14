@@ -19,8 +19,11 @@ public sealed class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbConte
             .AddEnvironmentVariables()
             .Build();
 
+        /*var cs = configuration.GetConnectionString("Default")
+                 ?? "Host=localhost;Port=5432;Database=bazar;Username=bazar;Password=bazar_pass";*/
+
         var cs = configuration.GetConnectionString("Default")
-                 ?? "Host=localhost;Port=5432;Database=bazar;Username=bazar;Password=bazar_pass";
+                 ?? "Host=bazar-postgres-01.postgres.database.azure.com;Port=5432;Database=bazar;Username=bazaradmin;Password=qwerty!545455;SSL Mode=Require;Trust Server Certificate=true";
 
         var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>()
             .UseNpgsql(cs, npgsql =>
