@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LiqPay Checkout</title>
+</head>
+<body>
+    <form id="liqpay-form" method="POST" action="https://www.liqpay.ua/api/3/checkout" accept-charset="utf-8">
+        <input type="hidden" name="data" value="eyJ2ZXJzaW9uIjoiMyIsInB1YmxpY19rZXkiOiJzYW5kYm94X2kxMDI0NzEzNzU2NCIsImFjdGlvbiI6InBheSIsImFtb3VudCI6MjQ4MC4wMCwiY3VycmVuY3kiOiJVQUgiLCJkZXNjcmlwdGlvbiI6Ilx1MDQ0N1x1MDQzNVx1MDQ0Mlx1MDQzMCIsIm9yZGVyX2lkIjoiYzVhNDE0NDYtYzVhMy00YzBlLWE3NWUtNzk3ODVjNThiOTMyIiwicmVzdWx0X3VybCI6Imh0dHBzOi8vY29jY291cy1kZW5pc2Utbm9uZmVydmVudC5uZ3Jvay1mcmVlLmRldi9hcGkvcGF5bWVudC9yZXN1bHQiLCJzZXJ2ZXJfdXJsIjoiaHR0cHM6Ly9jb2Njb3VzLWRlbmlzZS1ub25mZXJ2ZW50Lm5ncm9rLWZyZWUuZGV2L2FwaS93ZWJob29rcy9saXFwYXkiLCJwYXl0eXBlcyI6ImNhcmQiLCJsYW5ndWFnZSI6InVrIn0=" />
+        <input type="hidden" name="signature" value="jdxQzOnm2jcmC6IA3fcSBfXP1sI=" />
+
+        <button type="submit">Оплатити через LiqPay</button>
+    </form>
+
+    <script>
+        // если хочешь сразу редиректить на оплату автоматически — раскомментируй:
+        // document.getElementById("liqpay-form").submit();
+    </script>
+</body>
+</html>
