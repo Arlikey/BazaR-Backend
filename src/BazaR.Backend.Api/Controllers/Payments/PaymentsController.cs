@@ -8,6 +8,7 @@ using BazaR.Backend.Application.Payments.Queries.GetPaymentById;
 using BazaR.Backend.Application.Payments.Queries.GetPaymentsByOrder;
 using BazaR.Backend.Application.Payments.Queries.GetPaymentsBySeller;
 using BazaR.Backend.Application.Payments.Queries.GetPaymentsByUser;
+using BazaR.Backend.Application.Payments.Queries.GetSellerWallet;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -128,6 +129,28 @@ public sealed class PaymentsController : ControllerBase
 
         return NoContent();
     }
+
+
+
+    [HttpGet("wallet/{sellerId:guid}")]
+    public async Task<IActionResult> GetSellerWallet(
+    Guid sellerId,
+    CancellationToken ct)
+    {
+        var result = await _mediator.Send(new GetSellerWalletQuery(sellerId), ct);
+
+        if (result.IsFailure)
+        {
+            return Problem(
+                title: result.Error.Code,
+                detail: result.Error.Message,
+                statusCode: StatusCodes.Status400BadRequest);
+        }
+
+        return Ok(result.Value);
+    }
+
+
 
     [HttpGet("{paymentId:guid}")]
     public async Task<IActionResult> GetById(

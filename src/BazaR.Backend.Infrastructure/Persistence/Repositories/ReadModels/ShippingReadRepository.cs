@@ -3,7 +3,9 @@ using BazaR.Backend.Application.Common;
 using BazaR.Backend.Application.Sellers.DTOs;
 using BazaR.Backend.Application.Shippings.DTOs;
 using BazaR.Backend.Domain.Orders;
+using BazaR.Backend.Domain.Sellers;
 using BazaR.Backend.Domain.Shippings;
+using BazaR.Backend.Domain.Users;
 using BazaR.Backend.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -50,7 +52,9 @@ public sealed class ShippingReadRepository : IShippingReadRepository
         ShippingListFilter filter,
         CancellationToken ct = default)
     {
-        var query = BuildListQuery();
+        var query = _db.Shippings
+            .AsNoTracking();
+
         query = ApplyFilter(query, filter);
 
         return await ToPagedResultAsync(query, filter, ct);
@@ -61,8 +65,9 @@ public sealed class ShippingReadRepository : IShippingReadRepository
         ShippingListFilter filter,
         CancellationToken ct = default)
     {
-        var query = BuildListQuery()
-            .Where(x => x.SellerId == sellerId);
+        var query = _db.Shippings
+            .AsNoTracking()
+            .Where(x => x.SellerId == new SellerId(sellerId));
 
         query = ApplyFilter(query, filter);
 
@@ -74,18 +79,68 @@ public sealed class ShippingReadRepository : IShippingReadRepository
         ShippingListFilter filter,
         CancellationToken ct = default)
     {
-        var query = BuildListQuery()
-            .Where(x => x.CustomerId == customerId);
+        var query = _db.Shippings
+            .AsNoTracking()
+            .Where(x => x.CustomerId == new UserId(customerId));
 
         query = ApplyFilter(query, filter);
 
         return await ToPagedResultAsync(query, filter, ct);
     }
 
-    private IQueryable<ShippingListItemDto> BuildListQuery()
+    private static IQueryable<Shipping> ApplyFilter(
+        IQueryable<Shipping> query,
+        ShippingListFilter filter)
     {
-        return _db.Shippings
-            .AsNoTracking()
+        if (filter is null)
+            return query.OrderByDescending(x => x.CreatedAtUtc);
+
+        if (!string.IsNullOrWhiteSpace(filter.Query))
+        {
+            var q = filter.Query.Trim();
+
+            query = query.Where(x =>
+                EF.Functions.ILike(x.Recipient.FirstName + " " + x.Recipient.LastName, $"%{q}%") ||
+                EF.Functions.ILike(x.Recipient.Phone, $"%{q}%") ||
+                EF.Functions.ILike(x.Destination.City, $"%{q}%") ||
+                (x.Destination.PickupPointName != null && EF.Functions.ILike(x.Destination.PickupPointName, $"%{q}%")) ||
+                (x.TrackingNumber != null && EF.Functions.ILike(x.TrackingNumber, $"%{q}%")));
+        }
+
+        if (filter.Method.HasValue)
+        {
+            var method = (ShippingMethod)filter.Method.Value;
+            query = query.Where(x => x.Method == method);
+        }
+
+        if (filter.Status.HasValue)
+        {
+            var status = (ShippingStatus)filter.Status.Value;
+            query = query.Where(x => x.Status == status);
+        }
+
+        return query.OrderByDescending(x => x.CreatedAtUtc);
+    }
+
+    private static async Task<PagedResult<ShippingListItemDto>> ToPagedResultAsync(
+        IQueryable<Shipping> query,
+        ShippingListFilter filter,
+        CancellationToken ct)
+    {
+        var page = filter?.Page > 0 ? filter.Page : 1;
+        var pageSize = filter?.PageSize > 0 ? filter.PageSize : 20;
+
+        if (pageSize > 100)
+            pageSize = 100;
+
+        var totalCount = await query.CountAsync(ct);
+
+        var entities = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(ct);
+
+        var items = entities
             .Select(x => new ShippingListItemDto(
                 x.Id.Value,
                 x.OrderId.Value,
@@ -102,7 +157,16 @@ public sealed class ShippingReadRepository : IShippingReadRepository
                 x.CreatedAtUtc,
                 x.DispatchedAtUtc,
                 x.DeliveredAtUtc
-            ));
+            ))
+            .ToList();
+
+        return new PagedResult<ShippingListItemDto>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            Page = page,
+            PageSize = pageSize
+        };
     }
 
     private static ShippingDetailsDto MapDetails(Shipping shipping)
@@ -161,64 +225,5 @@ public sealed class ShippingReadRepository : IShippingReadRepository
             shipping.DeliveredAtUtc,
             shipping.CancelledAtUtc
         );
-    }
-
-    private static IQueryable<ShippingListItemDto> ApplyFilter(
-        IQueryable<ShippingListItemDto> query,
-        ShippingListFilter filter)
-    {
-        if (filter is null)
-            return query.OrderByDescending(x => x.CreatedAtUtc);
-
-        if (!string.IsNullOrWhiteSpace(filter.Query))
-        {
-            var q = filter.Query.Trim();
-
-            query = query.Where(x =>
-                EF.Functions.ILike(x.RecipientFullName, $"%{q}%") ||
-                EF.Functions.ILike(x.RecipientPhone, $"%{q}%") ||
-                EF.Functions.ILike(x.City, $"%{q}%") ||
-                (x.PickupPointName != null && EF.Functions.ILike(x.PickupPointName, $"%{q}%")) ||
-                (x.TrackingNumber != null && EF.Functions.ILike(x.TrackingNumber, $"%{q}%")));
-        }
-
-        if (filter.Method.HasValue)
-        {
-            query = query.Where(x => x.Method == filter.Method.Value);
-        }
-
-        if (filter.Status.HasValue)
-        {
-            query = query.Where(x => x.Status == filter.Status.Value);
-        }
-
-        return query.OrderByDescending(x => x.CreatedAtUtc);
-    }
-
-    private static async Task<PagedResult<ShippingListItemDto>> ToPagedResultAsync(
-        IQueryable<ShippingListItemDto> query,
-        ShippingListFilter filter,
-        CancellationToken ct)
-    {
-        var page = filter?.Page > 0 ? filter.Page : 1;
-        var pageSize = filter?.PageSize > 0 ? filter.PageSize : 20;
-
-        if (pageSize > 100)
-            pageSize = 100;
-
-        var totalCount = await query.CountAsync(ct);
-
-        var items = await query
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync(ct);
-
-        return new PagedResult<ShippingListItemDto>
-        {
-            Items = items,
-            TotalCount = totalCount,
-            Page = page,
-            PageSize = pageSize
-        };
     }
 }

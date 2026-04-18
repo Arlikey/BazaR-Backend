@@ -48,7 +48,8 @@ public sealed class DispatchShippingCommandHandler
                 "Order was not found."));
         }
 
-        var orderResult = order.Ship();
+        var orderResult = order.StartProcessing();
+        
         if (orderResult.IsFailure)
             return orderResult;
 

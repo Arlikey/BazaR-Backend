@@ -54,7 +54,7 @@ public static class DependencyInjection
                 configuration.GetConnectionString("Default"),
                 npgsql =>
                 {
-                    // если миграции лежат в Infrastructure
+                   
                     npgsql.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName);
 
                     
@@ -106,6 +106,8 @@ public static class DependencyInjection
         services.AddScoped<IOfferReadRepository, OfferReadRepository>();
         services.AddScoped<IProductOfferAttacher, ProductOfferAttacher>();
         services.AddScoped<IProductImageStorage, ProductImageStorage>();
+
+        services.AddScoped<IOrderReadRepository, OrderReadRepository>();
 
         services.Configure<AzureBlobStorageOptions>(
         configuration.GetSection("BlobStorage"));

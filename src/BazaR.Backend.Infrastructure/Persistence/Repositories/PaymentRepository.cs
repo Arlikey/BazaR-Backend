@@ -1,4 +1,5 @@
 ﻿using BazaR.Backend.Application.Abstractions.Repositories;
+using BazaR.Backend.Domain.Common;
 using BazaR.Backend.Domain.Orders;
 using BazaR.Backend.Domain.Payments;
 using BazaR.Backend.Domain.Sellers;
@@ -36,6 +37,13 @@ public sealed class PaymentRepository : IPaymentRepository
             .FirstOrDefaultAsync(x => x.MerchantOrderReference == normalized, ct);
     }
 
+
+    public async Task<Payment?> GetSingleByOrderIdAsync(OrderId orderId, CancellationToken ct = default)
+    => await _db.Payments
+        .Where(x => x.OrderId == orderId)
+        .OrderByDescending(x => x.CreatedAtUtc)
+        .FirstOrDefaultAsync(ct);
+
     public async Task<IReadOnlyCollection<Payment>> GetByOrderIdAsync(OrderId orderId, CancellationToken ct = default)
         => await _db.Payments
             .Where(x => x.OrderId == orderId)
@@ -56,4 +64,21 @@ public sealed class PaymentRepository : IPaymentRepository
 
     private static string? NormalizeMerchantOrderReference(string? value)
         => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+
+    public async Task<Money> GetSellerBalanceAsync(SellerId sellerId, CancellationToken ct)
+    {
+        var payments = await _db.Payments
+            .Where(p => p.SellerId == sellerId && p.Status == PaymentStatus.Paid)
+            .ToListAsync(ct);
+
+        if (payments.Count == 0)
+            return Money.Zero("UAH"); // дефолт
+
+        var currency = payments.First().Amount.Currency;
+
+        var total = payments.Sum(p => p.Amount.Amount);
+
+        return Money.Create(total, currency).Value!;
+    }
 }

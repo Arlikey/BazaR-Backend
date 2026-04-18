@@ -1,4 +1,5 @@
-﻿using BazaR.Backend.Domain.Orders;
+﻿using BazaR.Backend.Domain.Common;
+using BazaR.Backend.Domain.Orders;
 using BazaR.Backend.Domain.Payments;
 using BazaR.Backend.Domain.Sellers;
 using BazaR.Backend.Domain.Users;
@@ -10,10 +11,11 @@ public interface IPaymentRepository
     Task<Payment?> GetByIdAsync(PaymentId id, CancellationToken ct = default);
     Task<Payment?> GetByMerchantOrderReferenceAsync(string merchantOrderReference, CancellationToken ct = default);
 
+    Task<Payment?> GetSingleByOrderIdAsync(OrderId orderId, CancellationToken ct = default);
     Task<IReadOnlyCollection<Payment>> GetByOrderIdAsync(OrderId orderId, CancellationToken ct = default);
     Task<IReadOnlyCollection<Payment>> GetByUserIdAsync(UserId userId, CancellationToken ct = default);
     Task<IReadOnlyCollection<Payment>> GetBySellerIdAsync(SellerId sellerId, CancellationToken ct = default);
-
+    Task<Money> GetSellerBalanceAsync(SellerId sellerId, CancellationToken ct);
     void Add(Payment payment);
     void Update(Payment payment);
 }
