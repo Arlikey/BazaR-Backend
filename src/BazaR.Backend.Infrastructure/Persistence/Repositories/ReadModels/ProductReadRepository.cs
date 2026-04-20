@@ -13,42 +13,51 @@ public sealed class ProductReadRepository : IProductReadRepository
 
     public ProductReadRepository(AppDbContext db) => _db = db;
 
+
+    public async Task<IReadOnlyList<ProductCardDto>> ListByIdsAsync(
+    IReadOnlyCollection<ProductId> ids,
+    CancellationToken ct)
+    {
+        if (ids.Count == 0)
+            return Array.Empty<ProductCardDto>();
+
+        var rows = await _db.Products
+            .AsNoTracking()
+            .Where(p => ids.Contains(p.Id))
+            .GroupJoin(
+                _db.ProductRatingSummaries.AsNoTracking(),
+                p => p.Id,
+                r => r.Id,
+                (p, ratings) => new { Product = p, Rating = ratings.FirstOrDefault() }
+            )
+            .Select(x => new ProductCardDto(
+                x.Product.Id.Value,
+                x.Product.Name,
+                x.Product.Slug != null ? x.Product.Slug.Value : null,
+                x.Product.Description,
+                x.Product.Images
+                    .OrderByDescending(i => i.IsMain)
+                    .ThenBy(i => i.SortOrder)
+                    .Select(i => i.Url)
+                    .FirstOrDefault(),
+                x.Rating != null ? x.Rating.AverageRating : 0m,
+                x.Rating != null ? x.Rating.ReviewsCount : 0
+            ))
+            .ToListAsync(ct);
+
+        return rows;
+    }
+
+
+
+
+
     private static IQueryable<string> MainImageUrlQuery(Product p)
         => (IQueryable<string>)p.Images
             .OrderByDescending(i => i.IsMain)
             .ThenBy(i => i.SortOrder)
             .Select(i => i.Url)
             .Take(1);
-
-    /*public async Task<IReadOnlyList<ProductListItemDto>> ListByCategoryAsync(
-        CategoryId categoryId,
-        ProductStatus? status,
-        CancellationToken ct)
-    {
-        IQueryable<Product> query = _db.Products.AsNoTracking();
-
-        query = query.Where(p => p.CategoryId == categoryId);
-
-        if (status is not null)
-            query = query.Where(p => p.Status == status.Value);
-
-        var rows = await query
-            .OrderBy(p => p.Name)
-            .Select(p => new ProductListItemDto(
-                p.Id.Value,
-                p.Name,
-                p.Description,
-                p.CategoryId.Value,
-                p.BrandId.HasValue ? p.BrandId.Value.Value : (Guid?)null,
-                p.VendorCode != null ? p.VendorCode.Value : null,
-                p.Slug != null ? p.Slug.Value : null,
-                p.Status.ToString(),
-                MainImageUrlQuery(p).FirstOrDefault()
-            ))
-            .ToListAsync(ct);
-
-        return rows;
-    }*/
 
     public async Task<IReadOnlyList<ProductCardDto>> ListByCategoryAsync(
     CategoryId categoryId,

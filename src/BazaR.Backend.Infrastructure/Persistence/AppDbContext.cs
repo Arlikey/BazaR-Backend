@@ -18,6 +18,7 @@ using BazaR.Backend.Domain.Sellers;
 using BazaR.Backend.Domain.Shipping;
 using BazaR.Backend.Domain.Shippings;
 using BazaR.Backend.Domain.Users;
+using BazaR.Backend.Domain.ViewedProducts;
 using BazaR.Backend.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 
@@ -42,7 +43,7 @@ public sealed class AppDbContext : DbContext
 
     public DbSet<ProductRatingSummary> ProductRatingSummaries => Set<ProductRatingSummary>();
     public DbSet<SellerRatingSummary> SellerRatingSummaries => Set<SellerRatingSummary>();
-
+    public DbSet<ViewedProduct> ViewedProducts => Set<ViewedProduct>();
     public DbSet<Favorite> Favorites => Set<Favorite>();
     public DbSet<User> Users => Set<User>();
     public DbSet<Product> Products => Set<Product>();

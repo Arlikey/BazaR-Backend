@@ -128,6 +128,7 @@ public static class DependencyInjection
         services.AddScoped<ISellerRatingSummaryRepository, SellerRatingSummaryRepository>();
         services.AddScoped<IProductReviewRatingReader, ProductReviewRatingReader>();
         services.AddScoped<ISellerReviewRatingReader, SellerReviewRatingReader>();
+        services.AddScoped<IViewedProductRepository, ViewedProductRepository>();
 
         services.AddScoped<ProductRatingSummaryUpdater>();
         services.AddScoped<SellerRatingSummaryUpdater>();

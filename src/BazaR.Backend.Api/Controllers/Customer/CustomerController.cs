@@ -7,6 +7,7 @@ using BazaR.Backend.Application.Users.Commands.SetAvatar;
 
 using BazaR.Backend.Application.Users.Commands.UpdateMyProfile;
 using BazaR.Backend.Application.Users.Queries.GetMe;
+using BazaR.Backend.Application.ViewedProducts.Queries.GetMine;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -23,7 +24,22 @@ public sealed class CustomerController : ControllerBase
 
     public CustomerController(IMediator mediator) => _mediator = mediator;
 
-    
+    [HttpGet("viewed")]
+    public async Task<IActionResult> GetMine(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        CancellationToken ct = default)
+    {
+        var result = await _mediator.Send(
+            new GetMyViewedProductsQuery(page, pageSize),
+            ct);
+
+        if (result.IsFailure)
+            return Unauthorized(result.Errors);
+
+        return Ok(result.Value);
+    }
+
     [HttpGet]
     public async Task<IActionResult> Get(CancellationToken ct)
     {
@@ -96,5 +112,8 @@ public sealed class CustomerController : ControllerBase
         if (res.IsFailure) return BadRequest(res.Error);
         return NoContent();
     }
+
+
+    
 }
 

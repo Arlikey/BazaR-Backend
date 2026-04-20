@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
-using System.IO; // Для Directory.GetCurrentDirectory()
+using System.IO; 
 
 namespace BazaR.Backend.Infrastructure.Persistence;
 
@@ -19,8 +19,8 @@ public sealed class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbConte
             .AddEnvironmentVariables()
             .Build();
 
-        /*var cs = configuration.GetConnectionString("Default")
-                 ?? "Host=localhost;Port=5432;Database=bazar;Username=bazar;Password=bazar_pass";*/
+        //var cs = configuration.GetConnectionString("Default")
+                 //?? "Host=localhost;Port=5432;Database=bazar;Username=bazar;Password=bazar_pass";
 
         var cs = configuration.GetConnectionString("Default")
                  ?? "Host=bazar-postgres-01.postgres.database.azure.com;Port=5432;Database=bazar;Username=bazaradmin;Password=qwerty!545455;SSL Mode=Require;Trust Server Certificate=true";

@@ -7,7 +7,11 @@ namespace BazaR.Backend.Application.Abstractions.ReadModels;
 
 public interface IProductReadRepository
 {
-    //sk<IReadOnlyList<ProductListItemDto>> ListAsync(CancellationToken ct);
+    Task<IReadOnlyList<ProductCardDto>> ListByIdsAsync(
+    IReadOnlyCollection<ProductId> ids,
+    CancellationToken ct);
+
+
     Task<IReadOnlyList<ProductCardDto>> ListByCategoryAsync(
     CategoryId categoryId,
     ProductStatus? status,

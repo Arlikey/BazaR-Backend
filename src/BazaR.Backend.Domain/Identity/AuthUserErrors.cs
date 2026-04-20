@@ -11,4 +11,5 @@ public static class AuthUserErrors
     public static readonly Error RefreshTokenInvalid = new("Identity.RefreshTokenInvalid", "Refresh token is invalid.");
     public static readonly Error RefreshTokenExpired = new("Identity.RefreshTokenExpired", "Refresh token is expired.");
     public static readonly Error RefreshTokenRevoked = new("Identity.RefreshTokenRevoked", "Refresh token is revoked.");
+    public static readonly Error Unauthorized = new("Identity.Unauthorized", "User is not authorized.");
 }
