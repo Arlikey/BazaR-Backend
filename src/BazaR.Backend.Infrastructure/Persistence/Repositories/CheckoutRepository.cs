@@ -15,6 +15,34 @@ public sealed class CheckoutRepository : ICheckoutRepository
         _db = db;
     }
 
+
+    public async Task<Checkout?> GetFullByIdAsync(CheckoutId id, CancellationToken ct)
+    {
+        return await _db.Checkouts
+            .AsNoTracking()
+            .Include(x => x.Lines)
+            .FirstOrDefaultAsync(x => x.Id == id, ct);
+    }
+
+    public async Task<CheckoutLine?> GetLineByIdAsync(
+        CheckoutId checkoutId,
+        CheckoutLineId lineId,
+        CancellationToken ct)
+    {
+        var checkout = await _db.Checkouts
+            .AsNoTracking()
+            .Include(x => x.Lines)
+            .FirstOrDefaultAsync(x => x.Id == checkoutId, ct);
+
+        if (checkout is null)
+            return null;
+
+        return checkout.Lines.FirstOrDefault(x => x.Id == lineId);
+    }
+
+
+
+
     public async Task<Checkout?> GetByIdAsync(CheckoutId id, CancellationToken ct)
     {
         return await _db.Checkouts

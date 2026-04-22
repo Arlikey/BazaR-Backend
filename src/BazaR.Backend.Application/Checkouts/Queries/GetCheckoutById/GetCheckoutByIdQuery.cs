@@ -2,6 +2,5 @@
 using BazaR.Backend.Domain.Common;
 using MediatR;
 
-namespace BazaR.Backend.Application.Checkouts.Queries.GetCheckoutById;
-
-public sealed record GetCheckoutByIdQuery(Guid CheckoutId) : IRequest<Result<CheckoutVm>>;
+public sealed record GetCheckoutByIdQuery(Guid CheckoutId)
+    : IRequest<Result<CheckoutDetailsDto>>;

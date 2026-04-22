@@ -40,6 +40,48 @@ public sealed class CustomerCheckoutsController : ControllerBase
         return Ok(new StartCheckoutResponse(result.Value));
     }
 
+
+
+    [HttpGet("{checkoutId:guid}")]
+    public async Task<IActionResult> GetById(
+        Guid checkoutId,
+        CancellationToken ct)
+    {
+        var result = await _mediator.Send(new GetCheckoutByIdQuery(checkoutId), ct);
+
+        if (result.IsFailure)
+        {
+            return Problem(
+                title: result.Error.Code,
+                detail: result.Error.Message,
+                statusCode: StatusCodes.Status404NotFound);
+        }
+
+        return Ok(result.Value);
+    }
+
+    [HttpGet("{checkoutId:guid}/lines/{lineId:guid}")]
+    public async Task<IActionResult> GetLineById(
+        Guid checkoutId,
+        Guid lineId,
+        CancellationToken ct)
+    {
+        var result = await _mediator.Send(new GetCheckoutLineQuery(checkoutId, lineId), ct);
+
+        if (result.IsFailure)
+        {
+            return Problem(
+                title: result.Error.Code,
+                detail: result.Error.Message,
+                statusCode: StatusCodes.Status404NotFound);
+        }
+
+        return Ok(result.Value);
+    }
+
+
+
+
     [HttpPut("{checkoutId:guid}/lines/recipient")]
     public async Task<IActionResult> SetLineRecipient(
         Guid checkoutId,
