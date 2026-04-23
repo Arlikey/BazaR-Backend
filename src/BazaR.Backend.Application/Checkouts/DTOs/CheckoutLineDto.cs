@@ -7,29 +7,34 @@ using System.Threading.Tasks;
 namespace BazaR.Backend.Application.Checkouts.DTOs
 {
     public sealed record CheckoutLineDto(
-     Guid Id,
-     Guid ProductId,
-     string ProductTitle,
-     string Sku,
-     int Quantity,
+    Guid Id,
+    Guid ProductId,
+    string ProductTitle,
+    string Sku,
+    int Quantity,
 
-     decimal UnitPrice,
-     decimal LineTotal,
-     decimal ShippingCost,
-     decimal GrandTotal,
-     string Currency,
+    decimal UnitPrice,
+    decimal LineTotal,
+    decimal ShippingCost,
+    decimal GrandTotal,
+    string Currency,
 
-     string? RecipientName,
-     string? RecipientPhone,
-     string? RecipientEmail,
+    string? RecipientName,
+    string? RecipientPhone,
+    string? RecipientEmail,
 
-     string? ShippingMethod,
-     string? ShippingCity,
-     string? ShippingRegion,
-     string? ShippingWarehouse,
+    string? ShippingMethod,
+    string? ShippingCity,
+    string? ShippingRegion,
+    string? ShippingWarehouse,
 
-     string? PaymentMethod,
-     string? PaymentProvider,
-     bool RequiresOnlineAuthorization
- );
+    string? PaymentMethod,
+    string? PaymentProvider,
+    bool RequiresOnlineAuthorization,
+
+    // НОВОЕ
+    Guid SellerId,
+    string SellerName,
+    string? ProductMainImageUrl
+);
 }

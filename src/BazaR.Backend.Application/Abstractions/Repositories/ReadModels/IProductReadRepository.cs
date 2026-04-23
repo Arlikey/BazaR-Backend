@@ -11,7 +11,7 @@ public interface IProductReadRepository
     IReadOnlyCollection<ProductId> ids,
     CancellationToken ct);
 
-
+    Task<string?> GetMainImageUrlAsync(ProductId productId, CancellationToken ct);
     Task<IReadOnlyList<ProductCardDto>> ListByCategoryAsync(
     CategoryId categoryId,
     ProductStatus? status,

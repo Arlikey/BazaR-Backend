@@ -1,21 +1,29 @@
-﻿using BazaR.Backend.Application.Abstractions.Repositories;
+﻿using BazaR.Backend.Application.Abstractions.ReadModels;
+using BazaR.Backend.Application.Abstractions.Repositories;
 using BazaR.Backend.Application.Checkouts.DTOs;
 using BazaR.Backend.Application.Common.Abstractions;
 using BazaR.Backend.Domain.Checkouts;
 using BazaR.Backend.Domain.Common;
+using BazaR.Backend.Domain.Sellers;
 using MediatR;
 
 public sealed class GetCheckoutByIdQueryHandler
     : IRequestHandler<GetCheckoutByIdQuery, Result<CheckoutDetailsDto>>
 {
     private readonly ICheckoutRepository _checkouts;
+    private readonly ISellerRepository _sellers;
+    private readonly IProductReadRepository _products;
     private readonly ICurrentUser _current;
 
     public GetCheckoutByIdQueryHandler(
         ICheckoutRepository checkouts,
+        ISellerRepository sellers,
+        IProductReadRepository products,
         ICurrentUser current)
     {
         _checkouts = checkouts;
+        _sellers = sellers;
+        _products = products;
         _current = current;
     }
 
@@ -24,7 +32,8 @@ public sealed class GetCheckoutByIdQueryHandler
         CancellationToken ct)
     {
         var checkout = await _checkouts.GetFullByIdAsync(
-            new CheckoutId(request.CheckoutId), ct);
+            new CheckoutId(request.CheckoutId),
+            ct);
 
         if (checkout is null)
             return Result<CheckoutDetailsDto>.Failure(
@@ -34,14 +43,24 @@ public sealed class GetCheckoutByIdQueryHandler
             return Result<CheckoutDetailsDto>.Failure(
                 new Error("Checkout.Forbidden", "Access denied"));
 
-        var dto = Map(checkout);
+        var dto = await MapAsync(checkout, ct);
 
         return Result<CheckoutDetailsDto>.Success(dto);
     }
 
-    private static CheckoutDetailsDto Map(Checkout checkout)
+    private async Task<CheckoutDetailsDto> MapAsync(Checkout checkout, CancellationToken ct)
     {
         var currency = checkout.Lines.FirstOrDefault()?.UnitPrice.Currency ?? "UAH";
+
+        var lines = new List<CheckoutLineDto>(checkout.Lines.Count);
+
+        foreach (var line in checkout.Lines)
+        {
+            var seller = await _sellers.GetByIdAsync(line.SellerId, ct);
+            var mainImageUrl = await _products.GetMainImageUrlAsync(line.ProductId, ct);
+
+            lines.Add(MapLine(line, seller, mainImageUrl));
+        }
 
         return new CheckoutDetailsDto(
             checkout.Id.Value,
@@ -52,16 +71,22 @@ public sealed class GetCheckoutByIdQueryHandler
             checkout.GrandTotal.Amount,
             currency,
 
-            checkout.Lines.Select(MapLine).ToList()
+            lines
         );
     }
 
-    private static CheckoutLineDto MapLine(CheckoutLine x)
+    private static CheckoutLineDto MapLine(
+        CheckoutLine x,
+        Seller? seller,
+        string? productMainImageUrl)
     {
         var currency = x.UnitPrice.Currency;
-
         var shippingCost = x.Shipping?.Cost.Amount ?? 0m;
         var grandTotal = x.LineTotal.Amount + shippingCost;
+
+        var recipientName = string.Join(" ",
+            new[] { x.Recipient?.FirstName, x.Recipient?.LastName }
+                .Where(s => !string.IsNullOrWhiteSpace(s)));
 
         return new CheckoutLineDto(
             x.Id.Value,
@@ -76,8 +101,7 @@ public sealed class GetCheckoutByIdQueryHandler
             grandTotal,
             currency,
 
-            x.Recipient?.FirstName,
-            x.Recipient?.LastName,
+            string.IsNullOrWhiteSpace(recipientName) ? null : recipientName,
             x.Recipient?.Phone,
             x.Recipient?.Email,
 
@@ -87,7 +111,12 @@ public sealed class GetCheckoutByIdQueryHandler
             x.Shipping?.PickupPointName,
 
             x.Payment?.Method.ToString(),
-            x.Payment?.RequiresOnlineAuthorization ?? false
+            x.Payment?.Provider?.ToString(),
+            x.Payment?.RequiresOnlineAuthorization ?? false,
+
+            x.SellerId.Value,
+            seller?.Name ?? string.Empty,
+            productMainImageUrl
         );
     }
 }

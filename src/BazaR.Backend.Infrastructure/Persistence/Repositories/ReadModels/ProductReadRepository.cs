@@ -50,7 +50,16 @@ public sealed class ProductReadRepository : IProductReadRepository
 
 
 
-
+    public Task<string?> GetMainImageUrlAsync(ProductId productId, CancellationToken ct)
+    => _db.Products
+        .AsNoTracking()
+        .Where(p => p.Id == productId)
+        .Select(p => p.Images
+            .OrderByDescending(i => i.IsMain)
+            .ThenBy(i => i.SortOrder)
+            .Select(i => i.Url)
+            .FirstOrDefault())
+        .SingleOrDefaultAsync(ct);
 
     private static IQueryable<string> MainImageUrlQuery(Product p)
         => (IQueryable<string>)p.Images
