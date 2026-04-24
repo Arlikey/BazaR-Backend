@@ -165,6 +165,17 @@ public sealed class Order : AggregateRoot<OrderId>
         return Result.Success();
     }
 
+    public Result StartProcessingCashOnDelivery()
+    {
+        if (Status != OrderStatus.Pending)
+            return Result.Failure(OrderErrors.OnlyPendingCanBeProcessing);
+
+        Status = OrderStatus.Processing;
+        Touch();
+        AddDomainEvent(new OrderProcessingStartedEvent(Id));
+        return Result.Success();
+    }
+
     public Result Ship()
     {
         if (Status != OrderStatus.Processing)

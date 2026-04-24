@@ -83,7 +83,7 @@ public sealed class CheckoutSubmissionService : ICheckoutSubmissionService
             var order = orderResult.Value!;
             if (line.Payment!.Method == PaymentMethod.CashOnDelivery)
             {
-                var processingResult = order.StartProcessing();
+                var processingResult = order.StartProcessingCashOnDelivery();
                 if (processingResult.IsFailure)
                     return Result<CheckoutSubmissionResult>.Failure(processingResult.Error);
             }

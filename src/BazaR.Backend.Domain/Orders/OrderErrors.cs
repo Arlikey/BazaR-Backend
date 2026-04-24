@@ -74,4 +74,8 @@ public static class OrderErrors
     new("Order.AddressInvalid", "Delivery address is invalid.", ErrorType.Validation);
 
     public static readonly Error DeliveryChangeNotAllowed = new("Order.DeliveryChangeNotAllowed", "Cannot change delivery in current status");
+
+    public static readonly Error OnlyPendingCanBeProcessing = new(
+    "Order.OnlyPendingCanBeProcessing",
+    "Only pending cash on delivery orders can be moved to processing.");
 }
