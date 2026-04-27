@@ -50,11 +50,7 @@ public sealed class SetCheckoutLinePaymentCommandHandler
         if (line is null)
             return Result.Failure(new Error("Checkout.Line.NotFound", "Checkout line was not found."));
 
-        if (line.Recipient is null)
-            return Result.Failure(new Error("Checkout.Line.Recipient.Required", "Recipient must be set before payment."));
-
-        if (line.Shipping is null)
-            return Result.Failure(new Error("Checkout.Line.Shipping.Required", "Shipping must be set before payment."));
+       
 
         var paymentProfile = await _paymentProfiles.GetActiveBySellerIdAsync(line.SellerId, ct);
         if (paymentProfile is null)
@@ -82,6 +78,14 @@ public sealed class SetCheckoutLinePaymentCommandHandler
 
         if (request.Method == PaymentMethod.CashOnDelivery)
         {
+
+            if (line.Shipping is null)
+            {
+                return Result.Failure(new Error(
+                    "Checkout.Line.Shipping.Required",
+                    "Shipping must be set before cash on delivery payment."));
+            }
+
             var shippingProfile = await _shippingProfiles.GetActiveBySellerIdAsync(line.SellerId, ct);
             if (shippingProfile is null)
                 return Result.Failure(new Error("ShippingProfile.NotFound", "Active shipping profile for seller was not found."));

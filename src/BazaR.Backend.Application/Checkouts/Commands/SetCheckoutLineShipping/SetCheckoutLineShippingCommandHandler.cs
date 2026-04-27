@@ -64,12 +64,7 @@ public sealed class SetCheckoutLineShippingCommandHandler
                 "Checkout line was not found."));
         }
 
-        if (line.Recipient is null)
-        {
-            return Result.Failure(new Error(
-                "Checkout.Line.Recipient.Required",
-                "Recipient must be set before shipping."));
-        }
+        
 
         var profile = await _shippingProfiles.GetActiveBySellerIdAsync(line.SellerId, ct);
         if (profile is null)
