@@ -19,10 +19,13 @@ public sealed class CustomerProfileController : ControllerBase
         _mediator = mediator;
     }
 
-    [HttpGet("payment-profile")]
-    public async Task<IActionResult> GetMyPaymentProfile(CancellationToken ct)
+    [HttpGet("sellers/{sellerId:guid}/payment-profile")]
+    public async Task<IActionResult> GetPaymentProfile(
+    Guid sellerId,
+    CancellationToken ct)
     {
-        var result = await _mediator.Send(new GetMyPaymentProfileQuery(), ct);
+        var result = await _mediator.Send(new GetMyPaymentProfileQuery(sellerId), ct);
+
         if (result.IsFailure)
             return ProblemFromError(result.Error);
 
@@ -44,10 +47,13 @@ public sealed class CustomerProfileController : ControllerBase
         return Ok(response);
     }
 
-    [HttpGet("shipping-profile")]
-    public async Task<IActionResult> GetMyShippingProfile(CancellationToken ct)
+    [HttpGet("sellers/{sellerId:guid}/shipping-profile")]
+    public async Task<IActionResult> GetShippingProfile(
+     Guid sellerId,
+     CancellationToken ct)
     {
-        var result = await _mediator.Send(new GetMyShippingProfileQuery(), ct);
+        var result = await _mediator.Send(new GetMyShippingProfileQuery(sellerId), ct);
+
         if (result.IsFailure)
             return ProblemFromError(result.Error);
 

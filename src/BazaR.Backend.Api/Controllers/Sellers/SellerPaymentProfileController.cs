@@ -40,10 +40,15 @@ public sealed class SellerPaymentProfileController : ControllerBase
         return Ok(new CreatePaymentProfileResponse(result.Value));
     }
 
-    [HttpGet]
-    public async Task<IActionResult> GetMy(CancellationToken ct)
+    [HttpGet("{sellerId:guid}")]
+    public async Task<IActionResult> GetMy(
+    Guid sellerId,
+    CancellationToken ct)
     {
-        var result = await _mediator.Send(new GetMyPaymentProfileQuery(), ct);
+        var result = await _mediator.Send(
+            new GetMyPaymentProfileQuery(sellerId),
+            ct);
+
         if (result.IsFailure)
             return ProblemFromError(result.Error);
 

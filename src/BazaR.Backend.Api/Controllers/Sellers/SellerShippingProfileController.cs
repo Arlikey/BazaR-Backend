@@ -48,13 +48,14 @@ public sealed class SellerShippingProfileController : ControllerBase
         return Ok(new CreateShippingProfileResponse(result.Value));
     }
 
-    [HttpGet]
-    [ProducesResponseType(typeof(ShippingProfileResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> GetMy(CancellationToken ct)
+    [HttpGet("{sellerId:guid}")]
+    public async Task<IActionResult> GetMy(
+    Guid sellerId,
+    CancellationToken ct)
     {
-        var result = await _mediator.Send(new GetMyShippingProfileQuery(), ct);
+        var result = await _mediator.Send(
+            new GetMyShippingProfileQuery(sellerId),
+            ct);
 
         if (result.IsFailure)
         {

@@ -1,7 +1,7 @@
 ﻿using BazaR.Backend.Application.Abstractions.Repositories;
-using BazaR.Backend.Application.Common.Abstractions;
 using BazaR.Backend.Application.PaymentProfiles.DTOs;
 using BazaR.Backend.Domain.Common;
+using BazaR.Backend.Domain.Sellers;
 using MediatR;
 
 namespace BazaR.Backend.Application.PaymentProfiles.Queries.GetMyPaymentProfile;
@@ -11,30 +11,34 @@ public sealed class GetMyPaymentProfileQueryHandler
 {
     private readonly IPaymentProfileRepository _profiles;
     private readonly ISellerRepository _sellers;
-    private readonly ICurrentUser _current;
 
     public GetMyPaymentProfileQueryHandler(
         IPaymentProfileRepository profiles,
-        ISellerRepository sellers,
-        ICurrentUser current)
+        ISellerRepository sellers)
     {
         _profiles = profiles;
         _sellers = sellers;
-        _current = current;
     }
 
-    public async Task<Result<PaymentProfileDto>> Handle(GetMyPaymentProfileQuery request, CancellationToken ct)
+    public async Task<Result<PaymentProfileDto>> Handle(
+        GetMyPaymentProfileQuery request,
+        CancellationToken ct)
     {
-        if (!_current.IsAuthenticated)
-            return Result<PaymentProfileDto>.Failure(new Error("Auth.Required", "Authentication required."));
+        var sellerId = new SellerId(request.SellerId);
 
-        var seller = await _sellers.GetByOwnerUserIdAsync(_current.UserId, ct);
+        var seller = await _sellers.GetByIdAsync(sellerId, ct);
         if (seller is null)
-            return Result<PaymentProfileDto>.Failure(new Error("Seller.NotFound", "Seller was not found."));
+        {
+            return Result<PaymentProfileDto>.Failure(
+                new Error("Seller.NotFound", "Seller was not found."));
+        }
 
         var profile = await _profiles.GetBySellerIdAsync(seller.Id, ct);
         if (profile is null)
-            return Result<PaymentProfileDto>.Failure(new Error("PaymentProfile.NotFound", "Payment profile was not found."));
+        {
+            return Result<PaymentProfileDto>.Failure(
+                new Error("PaymentProfile.NotFound", "Payment profile was not found."));
+        }
 
         var dto = new PaymentProfileDto(
             profile.Id.Value,

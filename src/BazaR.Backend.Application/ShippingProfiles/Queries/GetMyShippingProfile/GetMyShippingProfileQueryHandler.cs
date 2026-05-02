@@ -1,9 +1,7 @@
 ﻿using BazaR.Backend.Application.Abstractions.Repositories;
-using BazaR.Backend.Application.Common.Abstractions;
 using BazaR.Backend.Application.ShippingProfiles.DTOs;
-
 using BazaR.Backend.Domain.Common;
-using BazaR.Backend.Domain.Users;
+using BazaR.Backend.Domain.Sellers;
 using MediatR;
 
 namespace BazaR.Backend.Application.ShippingProfiles.Queries.GetMyShippingProfile;
@@ -13,30 +11,34 @@ public sealed class GetMyShippingProfileQueryHandler
 {
     private readonly IShippingProfileRepository _profiles;
     private readonly ISellerRepository _sellers;
-    private readonly ICurrentUser _current;
 
     public GetMyShippingProfileQueryHandler(
         IShippingProfileRepository profiles,
-        ISellerRepository sellers,
-        ICurrentUser current)
+        ISellerRepository sellers)
     {
         _profiles = profiles;
         _sellers = sellers;
-        _current = current;
     }
 
-    public async Task<Result<ShippingProfileDto>> Handle(GetMyShippingProfileQuery request, CancellationToken ct)
+    public async Task<Result<ShippingProfileDto>> Handle(
+        GetMyShippingProfileQuery request,
+        CancellationToken ct)
     {
-        if (!_current.IsAuthenticated)
-            return Result<ShippingProfileDto>.Failure(new Error("Auth.Required", "Authentication required."));
+        var sellerId = new SellerId(request.SellerId);
 
-        var seller = await _sellers.GetByOwnerUserIdAsync(_current.UserId, ct);
+        var seller = await _sellers.GetByIdAsync(sellerId, ct);
         if (seller is null)
-            return Result<ShippingProfileDto>.Failure(new Error("Seller.NotFound", "Seller was not found."));
+        {
+            return Result<ShippingProfileDto>.Failure(
+                new Error("Seller.NotFound", "Seller was not found."));
+        }
 
         var profile = await _profiles.GetBySellerIdAsync(seller.Id, ct);
         if (profile is null)
-            return Result<ShippingProfileDto>.Failure(new Error("ShippingProfile.NotFound", "Shipping profile was not found."));
+        {
+            return Result<ShippingProfileDto>.Failure(
+                new Error("ShippingProfile.NotFound", "Shipping profile was not found."));
+        }
 
         var dto = new ShippingProfileDto(
             profile.Id.Value,

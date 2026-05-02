@@ -4,4 +4,5 @@ using MediatR;
 
 namespace BazaR.Backend.Application.PaymentProfiles.Queries.GetMyPaymentProfile;
 
-public sealed record GetMyPaymentProfileQuery : IRequest<Result<PaymentProfileDto>>;
+public sealed record GetMyPaymentProfileQuery(Guid SellerId)
+    : IRequest<Result<PaymentProfileDto>>;
