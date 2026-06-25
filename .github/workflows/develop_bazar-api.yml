@@ -61,6 +61,6 @@ jobs:
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'bazar-api'
+          app-name: 'bazar-backend'
           slot-name: 'Production'
           package: .
